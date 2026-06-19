@@ -1,0 +1,15 @@
+# نشر مجاني على Render — https://render.com
+# بعد ربط GitHub: New > Blueprint > اختر هذا المستودع
+services:
+  - type: web
+    name: 12-week-growth-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: GEMINI_API_KEY
+        sync: false

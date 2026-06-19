@@ -229,13 +229,16 @@ app.patch("/api/weeks/:id", (req, res) => {
   res.json(week);
 });
 
+// فحص صحة الخادم (للاستضافة السحابية)
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
 // توجيه كل المسارات غير المعروفة إلى الواجهة الأمامية (SPA)
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 12-Week Growth Platform يعمل على http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 12-Week Growth Platform يعمل على المنفذ ${PORT}`);
   if (!GEMINI_API_KEY) {
     console.warn("⚠️  GEMINI_API_KEY غير مُعرَّف — سيتم استخدام خطة احتياطية");
   }
