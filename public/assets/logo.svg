@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 110" role="img" aria-label="12 Week of Year">
+  <text x="8" y="82" font-family="Arial Black, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#0a0a0a">1</text>
+  <line x1="88" y1="12" x2="88" y2="82" stroke="#0a0a0a" stroke-width="2"/>
+  <text x="106" y="72" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5" fill="#0a0a0a" transform="rotate(-90 106 72)">12 WEEK OF YEAR</text>
+  <line x1="124" y1="12" x2="124" y2="82" stroke="#0a0a0a" stroke-width="2"/>
+  <text x="132" y="86" font-family="Arial Black, Helvetica, sans-serif" font-size="96" font-weight="900" fill="#8B1A1A">2</text>
+  <rect x="8" y="92" width="320" height="7" fill="#8B1A1A"/>
+</svg>
