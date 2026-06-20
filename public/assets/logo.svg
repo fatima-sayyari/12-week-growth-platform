@@ -1,8 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 110" role="img" aria-label="12 Week of Year">
-  <text x="8" y="82" font-family="Arial Black, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#0a0a0a">1</text>
-  <line x1="88" y1="12" x2="88" y2="82" stroke="#0a0a0a" stroke-width="2"/>
-  <text x="106" y="72" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5" fill="#0a0a0a" transform="rotate(-90 106 72)">12 WEEK OF YEAR</text>
-  <line x1="124" y1="12" x2="124" y2="82" stroke="#0a0a0a" stroke-width="2"/>
-  <text x="132" y="86" font-family="Arial Black, Helvetica, sans-serif" font-size="96" font-weight="900" fill="#8B1A1A">2</text>
-  <rect x="8" y="92" width="320" height="7" fill="#8B1A1A"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 105" role="img" aria-label="12 Week of Year">
+  <!-- الرقم 1 — رفيع وطويل -->
+  <text x="10" y="76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="82" font-weight="300" fill="#0a0a0a">1</text>
+
+  <!-- الخط العمودي الأيسر -->
+  <line x1="78" y1="6" x2="78" y2="74" stroke="#0a0a0a" stroke-width="1.5"/>
+
+  <!-- النص العمودي -->
+  <text x="96" y="64" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="2.4" fill="#0a0a0a" transform="rotate(-90 96 64)">12 WEEK OF YEAR</text>
+
+  <!-- الخط العمودي الأيمن -->
+  <line x1="112" y1="6" x2="112" y2="74" stroke="#0a0a0a" stroke-width="1.5"/>
+
+  <!-- الرقم 2 — عريض وأحمر -->
+  <text x="118" y="82" font-family="'Arial Black', 'Helvetica Neue', Helvetica, sans-serif" font-size="98" font-weight="900" fill="#7a1515">2</text>
+
+  <!-- الخط الأحمر السفلي -->
+  <rect x="10" y="88" width="395" height="9" fill="#7a1515"/>
 </svg>

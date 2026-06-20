@@ -1,14 +1,28 @@
 /**
  * script.js — الواجهة الأمامية (Vanilla JS)
- * صفحات: الرئيسية، إنشاء هدف، خطة 12 أسبوع، اليوم، الإحصائيات
  */
 
 const app = document.getElementById("app");
+const LOGO = "/assets/logo.jpeg";
 let currentGoalId = localStorage.getItem("goalId");
+
+// ─── عبارات تحفيزية ───
+const MOTIVATIONAL_QUOTES = [
+  "السنوات الطويلة تخدعنا؛ فهي تعطينا شعوراً كاذباً بأن لدينا الكثير من الوقت، مما يؤدي إلى التسويف.",
+  "النجاح لا يأتي مما تفعله أحياناً، بل مما تفعله باستمرار. التركيز على 12 أسبوعاً يجعلك تلتزم بالفعل لا بالتخطيط.",
+  "توقف عن محاولة القيام بكل شيء. اختر الأهداف التي ستحدث الفرق الأكبر، وركز عليها بكل قوتك.",
+  "الخطة بدون تنفيذ مجرد أمنية. في الـ 12 أسبوعاً، لا وقت للأعذار؛ العمل هو المقياس الوحيد.",
+  "لا يمكنك إدارة وقتك، يمكنك فقط إدارة أفعالك. ركز على أنشطتك الأكثر تأثيراً في كل أسبوع.",
+  "الأداء العالي يتطلب التزاماً صارماً بالتنفيذ اليومي، وليس فقط رؤية بعيدة المدى.",
+  "الانضباط هو الجسر بين الأهداف والإنجازات.",
+  "عليك أن تتوقع حدوث العوائق، ولكن لا تجعلها سبباً للتوقف. في نظام الـ 12 أسبوعاً، كل أسبوع هو بداية جديدة لتعويض ما فاتك.",
+  "أنت لست بحاجة إلى مزيد من الوقت، أنت بحاجة إلى مزيد من التركيز والانضباط في الوقت المتاح لديك.",
+  "الرؤية بدون تنفيذ هي مجرد هلوسة.",
+  "لا تنتظر بداية السنة الجديدة أو الشهر القادم لتبدأ؛ اعتبر أن اليوم هو بداية \"أسابيعك الـ 12\" الحاسمة، وابدأ بالعمل فوراً على الأهداف التي ستغير واقعك.",
+];
 
 // ─── أدوات مساعدة ───
 
-/** استدعاء API */
 async function api(url, options = {}) {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -19,7 +33,6 @@ async function api(url, options = {}) {
   return data;
 }
 
-/** تحديث روابط التنقل عند وجود هدف */
 function updateNav() {
   const show = !!currentGoalId;
   document.querySelectorAll(".nav-plan, .nav-today, .nav-stats").forEach((el) => {
@@ -27,7 +40,6 @@ function updateNav() {
   });
 }
 
-/** شريط تقدم */
 function progressBar(percent) {
   return `
     <div class="progress-wrap">
@@ -36,9 +48,56 @@ function progressBar(percent) {
     </div>`;
 }
 
-/** شاشة تحميل */
 function loading() {
   app.innerHTML = `<div class="loading"><div class="spinner"></div><p style="margin-top:1rem">جاري التحميل...</p></div>`;
+}
+
+/** عبارة واحدة — تُستخدم في كل الصفحات */
+function quoteBanner(index, label = "💡 تذكير") {
+  const q = MOTIVATIONAL_QUOTES[index % MOTIVATIONAL_QUOTES.length];
+  return `
+    <div class="quote-banner">
+      <span class="quote-label">${label}</span>
+      <p>${q}</p>
+    </div>`;
+}
+
+/** عرض احتفال بإنجاز أسبوع (مرة واحدة لكل أسبوع) */
+function showWeekCelebration(weekNumber) {
+  const key = `celebrated_${currentGoalId}_w${weekNumber}`;
+  if (localStorage.getItem(key)) return;
+
+  const quote = MOTIVATIONAL_QUOTES[(weekNumber - 1) % MOTIVATIONAL_QUOTES.length];
+  const modal = document.createElement("div");
+  modal.className = "celebration-modal";
+  modal.innerHTML = `
+    <div class="celebration-box">
+      <div class="celebration-icon">🎉</div>
+      <h2>أحسنت! أنجزت الأسبوع ${weekNumber}</h2>
+      <p class="celebration-quote">${quote}</p>
+      <button class="btn btn-primary" id="closeCelebration">واصل التقدم</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector("#closeCelebration").onclick = () => {
+    localStorage.setItem(key, "1");
+    modal.remove();
+  };
+}
+
+/** تدوير عبارة في الرئيسية فقط */
+function initHomeQuoteRotation() {
+  const textEl = document.getElementById("homeQuote");
+  if (!textEl) return;
+  let i = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+  textEl.textContent = MOTIVATIONAL_QUOTES[i];
+  setInterval(() => {
+    i = (i + 1) % MOTIVATIONAL_QUOTES.length;
+    textEl.style.opacity = "0";
+    setTimeout(() => {
+      textEl.textContent = MOTIVATIONAL_QUOTES[i];
+      textEl.style.opacity = "1";
+    }, 300);
+  }, 8000);
 }
 
 // ─── 1. الصفحة الرئيسية ───
@@ -58,9 +117,11 @@ function renderHome() {
         </div>
       </div>
       <div class="hero-visual">
-        <img src="/assets/logo.svg" alt="12 Week of Year" />
+        <img src="${LOGO}" alt="12 Week of Year" />
       </div>
     </section>
+
+    ${quoteBanner(0, "✦ عبارة اليوم")}
 
     <section id="about">
       <h2 class="section-title">الفكرة ببساطة</h2>
@@ -88,12 +149,19 @@ function renderHome() {
         <a href="#/create" class="btn btn-primary">ابدأ التخطيط الآن</a>
       </div>
     </section>
+
+    <div class="quote-banner quote-banner-dark">
+      <span class="quote-label">✦ تحفيز</span>
+      <p id="homeQuote"></p>
+    </div>
   `;
+  initHomeQuoteRotation();
 }
 
 // ─── 2. صفحة إنشاء الهدف ───
 function renderCreate() {
   app.innerHTML = `
+    ${quoteBanner(10, "✦ قبل أن تبدأ")}
     <div class="page-header text-center">
       <h1>إنشاء هدف جديد</h1>
       <p>أدخل تفاصيل هدفك وسنُنشئ خطة 12 أسبوعاً بالذكاء الاصطناعي</p>
@@ -120,6 +188,7 @@ function renderCreate() {
         إنشاء خطة 12 أسبوع
       </button>
     </form>
+    ${quoteBanner(2, "✦ ركّز")}
   `;
 
   document.getElementById("goalForm").addEventListener("submit", async (e) => {
@@ -163,8 +232,14 @@ async function renderPlan() {
 
   try {
     const { goal, weeks, stats } = await api(`/api/goals/${currentGoalId}/plan`);
+    const activeWeek = weeks.find((w) => {
+      const pct = w.total_tasks > 0 ? (w.completed_tasks / w.total_tasks) * 100 : 0;
+      return pct < 100;
+    });
+    const weekNum = activeWeek ? activeWeek.week_number : 12;
 
     app.innerHTML = `
+      ${quoteBanner(weekNum - 1, `✦ الأسبوع ${weekNum}`)}
       <div class="page-header">
         <h1>خطة 12 أسبوع</h1>
         <p>الهدف: <strong>${goal.name}</strong> — ${goal.result}</p>
@@ -182,7 +257,7 @@ async function renderPlan() {
             const pct = w.total_tasks > 0 ? Math.round((w.completed_tasks / w.total_tasks) * 100) : 0;
             const isDone = w.completed || pct === 100;
             return `
-            <div class="week-card ${isDone ? "done" : ""}" data-week-id="${w.id}">
+            <div class="week-card ${isDone ? "done" : ""}" data-week-id="${w.id}" data-week-num="${w.week_number}">
               <div class="week-header">
                 <div>
                   <span class="week-badge">الأسبوع ${w.week_number}</span>
@@ -190,6 +265,7 @@ async function renderPlan() {
                 </div>
                 <div style="min-width:120px">${progressBar(pct)}</div>
               </div>
+              ${isDone ? `<div class="week-done-quote">${MOTIVATIONAL_QUOTES[(w.week_number - 1) % MOTIVATIONAL_QUOTES.length]}</div>` : ""}
               <ul class="task-list">
                 ${w.tasks
                   .map(
@@ -208,16 +284,24 @@ async function renderPlan() {
       </div>
     `;
 
-    // تحديث المهمة عند وضع علامة إنجاز
     document.querySelectorAll(".task-check").forEach((cb) => {
       cb.addEventListener("change", async (e) => {
-        const taskId = e.target.dataset.id;
+        const weekCard = e.target.closest(".week-card");
+        const weekNum = Number(weekCard.dataset.weekNum);
         const completed = e.target.checked;
-        await api(`/api/tasks/${taskId}`, {
+
+        await api(`/api/tasks/${e.target.dataset.id}`, {
           method: "PATCH",
           body: JSON.stringify({ completed }),
         });
-        renderPlan(); // إعادة تحميل لتحديث نسبة الإنجاز
+
+        if (completed) {
+          const checks = weekCard.querySelectorAll(".task-check");
+          const allDone = [...checks].every((c) => c.checked);
+          if (allDone) showWeekCelebration(weekNum);
+        }
+
+        renderPlan();
       });
     });
   } catch (err) {
@@ -235,6 +319,7 @@ async function renderToday() {
       await api(`/api/goals/${currentGoalId}/today`);
 
     app.innerHTML = `
+      ${quoteBanner(currentWeek - 1, `✦ تحفيز الأسبوع ${currentWeek}`)}
       <div class="today-grid">
         <div>
           <div class="page-header">
@@ -272,6 +357,7 @@ async function renderToday() {
           ${progressBar(stats.progressPercent)}
           <hr style="margin:1rem 0;border-color:var(--border)" />
           <p style="font-size:0.85rem;color:var(--muted)">الهدف: ${goal.name}</p>
+          <div class="quote-sidebar">${MOTIVATIONAL_QUOTES[programDay % MOTIVATIONAL_QUOTES.length]}</div>
         </aside>
       </div>
     `;
@@ -307,12 +393,15 @@ async function renderStats() {
 
   try {
     const { goal, stats } = await api(`/api/goals/${currentGoalId}/stats`);
+    const quoteIdx = Math.min(10, Math.floor(stats.progressPercent / 10));
 
     app.innerHTML = `
       <div class="page-header">
         <h1>لوحة الإحصائيات</h1>
         <p>الهدف: ${goal.name}</p>
       </div>
+
+      ${quoteBanner(quoteIdx, "✦ استمر")}
 
       <div class="stats-grid">
         <div class="stat-card">
@@ -352,6 +441,8 @@ async function renderStats() {
         <h3>نظرة عامة</h3>
         <canvas id="overviewChart" height="200"></canvas>
       </div>
+
+      ${quoteBanner(6, "✦ تذكير")}
     `;
 
     drawOverviewChart(stats);
@@ -360,7 +451,6 @@ async function renderStats() {
   }
 }
 
-/** مخطط دائري بسيط (Canvas) */
 function drawOverviewChart(stats) {
   const canvas = document.getElementById("overviewChart");
   if (!canvas) return;
@@ -414,33 +504,29 @@ function drawOverviewChart(stats) {
   });
 }
 
-// ─── التوجيه (Routing) ───
+// ─── التوجيه ───
 
 const routes = {
   "/": renderHome,
   "/create": renderCreate,
   "/plan": renderPlan,
-  "/dashboard": renderPlan, // توافق مع الروابط القديمة
+  "/dashboard": renderPlan,
   "/today": renderToday,
   "/stats": renderStats,
 };
 
 function router() {
   const hash = location.hash.slice(1) || "/";
-  const route = routes[hash] || renderHome;
-  route();
+  (routes[hash] || renderHome)();
   updateNav();
   document.getElementById("siteNav")?.classList.remove("open");
 }
 
 window.addEventListener("hashchange", router);
-
-// قائمة الجوال
 document.getElementById("navToggle")?.addEventListener("click", () => {
   document.getElementById("siteNav").classList.toggle("open");
 });
 
-/** التهيئة */
 async function init() {
   if (!currentGoalId) {
     try {

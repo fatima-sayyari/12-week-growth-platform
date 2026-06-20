@@ -49,8 +49,8 @@ body {
 }
 
 .logo-link { display: flex; align-items: center; text-decoration: none; }
-.logo-img { height: 48px; width: auto; }
-.footer-logo { height: 36px; margin-bottom: 0.5rem; opacity: 0.85; }
+.logo-img { height: 52px; width: auto; }
+.footer-logo { height: 44px; margin-bottom: 0.5rem; opacity: 0.95; }
 
 .site-nav {
   display: flex;
@@ -158,7 +158,92 @@ body {
   border-radius: 16px;
   background: var(--bg-soft);
 }
-.hero-visual img { max-width: 280px; width: 100%; height: auto; }
+.hero-visual img { max-width: 340px; width: 100%; height: auto; }
+
+/* ─── عبارات تحفيزية (موزّعة على الصفحات) ─── */
+.quote-banner {
+  border-right: 4px solid var(--red);
+  background: var(--bg-soft);
+  border-radius: 0 12px 12px 0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.quote-banner p {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--black);
+  margin: 0;
+}
+.quote-banner-dark {
+  background: var(--black);
+  border-right-color: var(--red);
+  border-radius: 12px;
+  margin-top: 2rem;
+}
+.quote-banner-dark p {
+  color: var(--white);
+  font-weight: 600;
+  transition: opacity 0.3s;
+}
+.quote-label {
+  display: block;
+  color: var(--red);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.5px;
+}
+.quote-banner-dark .quote-label { color: #f87171; }
+
+.quote-sidebar {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.week-done-quote {
+  background: var(--red-soft);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ─── احتفال إنجاز أسبوع ─── */
+.celebration-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+}
+.celebration-box {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  border-top: 5px solid var(--red);
+}
+.celebration-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.celebration-box h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+.celebration-quote {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
 
 /* ─── Sections ─── */
 .section-title {
