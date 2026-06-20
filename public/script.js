@@ -181,7 +181,8 @@ function renderCreate() {
       </div>
       <div class="form-group">
         <label>عدد الساعات المتاحة أسبوعياً</label>
-        <input type="number" name="hours" required min="1" max="168" step="0.5" placeholder="10" />
+        <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
+        <p class="form-hint" id="hoursPreview">20 ساعة = 4 أيام عمل × 5 س/يوم + 3 أيام راحة</p>
       </div>
       <div id="formError" class="alert hidden"></div>
       <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%">
@@ -190,6 +191,17 @@ function renderCreate() {
     </form>
     ${quoteBanner(2, "✦ ركّز")}
   `;
+
+  function updateHoursPreview() {
+    const h = parseFloat(document.getElementById("hoursInput").value) || 0;
+    const workDays = Math.min(5, Math.max(2, Math.round(h / 5)));
+    const perDay = Math.round((h / workDays) * 10) / 10;
+    const rest = 7 - workDays;
+    document.getElementById("hoursPreview").textContent =
+      `${h} ساعة = ${workDays} أيام عمل × ${perDay} س/يوم + ${rest} أيام راحة`;
+  }
+  document.getElementById("hoursInput").addEventListener("input", updateHoursPreview);
+  updateHoursPreview();
 
   document.getElementById("goalForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -226,12 +238,38 @@ function renderCreate() {
 }
 
 // ─── 3. صفحة خطة 12 أسبوع ───
+function renderWeekSchedule(workDays, hoursPerDay, tasks) {
+  const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  let html = `<div class="week-schedule">`;
+  for (let d = 1; d <= 7; d++) {
+    const dayTasks = tasks.filter((t) => t.day_in_week === d);
+    const isWork = d <= workDays;
+    html += `
+      <div class="schedule-day ${isWork ? "work" : "rest"} ${dayTasks.some(t=>t.completed)?"has-done":""}">
+        <div class="schedule-day-head">
+          <span>${dayNames[d - 1] || "يوم " + d}</span>
+          <span class="schedule-tag">${isWork ? hoursPerDay + " س" : "راحة"}</span>
+        </div>
+        ${dayTasks.length
+          ? dayTasks.map(t => `<p class="schedule-task ${t.completed?"done":""}">${t.completed?"✔ ":""}${cleanDisplayTitle(t.title)}</p>`).join("")
+          : `<p class="schedule-empty">${isWork ? "—" : "🌿"}</p>`}
+      </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function cleanDisplayTitle(title) {
+  return String(title).replace(/\s*\([\d.]+\s*س\s*—[^)]*\)\s*$/u, "").trim();
+}
+
 async function renderPlan() {
   if (!currentGoalId) { location.hash = "#/create"; return; }
   loading();
 
   try {
-    const { goal, weeks, stats } = await api(`/api/goals/${currentGoalId}/plan`);
+    const { goal, weeks, stats, workDays, hoursPerDay, restDays } =
+      await api(`/api/goals/${currentGoalId}/plan`);
     const activeWeek = weeks.find((w) => {
       const pct = w.total_tasks > 0 ? (w.completed_tasks / w.total_tasks) * 100 : 0;
       return pct < 100;
@@ -243,6 +281,12 @@ async function renderPlan() {
       <div class="page-header">
         <h1>خطة 12 أسبوع</h1>
         <p>الهدف: <strong>${goal.name}</strong> — ${goal.result}</p>
+        <div class="schedule-summary">
+          <span>📅 ${workDays} أيام عمل</span>
+          <span>⏱ ${hoursPerDay} س/يوم</span>
+          <span>🌿 ${restDays} أيام راحة</span>
+          <span>📊 ${goal.hours} س/أسبوع</span>
+        </div>
         <div style="max-width:400px;margin-top:0.75rem">${progressBar(stats.progressPercent)}</div>
       </div>
 
@@ -266,6 +310,7 @@ async function renderPlan() {
                 <div style="min-width:120px">${progressBar(pct)}</div>
               </div>
               ${isDone ? `<div class="week-done-quote">${MOTIVATIONAL_QUOTES[(w.week_number - 1) % MOTIVATIONAL_QUOTES.length]}</div>` : ""}
+              ${renderWeekSchedule(workDays, hoursPerDay, w.tasks)}
               <ul class="task-list">
                 ${w.tasks
                   .map(
@@ -273,7 +318,9 @@ async function renderPlan() {
                   <li class="${t.completed ? "done" : ""}">
                     <input type="checkbox" class="task-check" data-id="${t.id}"
                       ${t.completed ? "checked" : ""} />
-                    <span class="task-text">${t.title}</span>
+                    <span class="task-day-badge">يوم ${t.day_in_week}</span>
+                    <span class="task-text">${cleanDisplayTitle(t.title)}</span>
+                    <span class="task-hours">${hoursPerDay} س</span>
                   </li>`
                   )
                   .join("")}
@@ -315,8 +362,53 @@ async function renderToday() {
   loading();
 
   try {
-    const { goal, tasks, programDay, currentWeek, dayInWeek, daysRemaining, stats } =
-      await api(`/api/goals/${currentGoalId}/today`);
+    const data = await api(`/api/goals/${currentGoalId}/today`);
+    const tasks = data.tasks ?? [];
+    const deferredTasks = data.deferredTasks ?? [];
+    const carryOverTasks = data.carryOverTasks ?? [];
+    const {
+      goal, programDay, currentWeek, dayInWeek,
+      daysRemaining, stats,
+      workDays = 4, hoursPerDay = 5, restDays = 3, isRestDay = false,
+    } = data;
+
+    const todayTasks = [...tasks];
+    const extraTasks = [...deferredTasks, ...carryOverTasks.filter(
+      (c) => !deferredTasks.some((d) => d.id === c.id) && !tasks.some((t) => t.id === c.id)
+    )];
+
+    let tasksHtml;
+    if (isRestDay && todayTasks.length === 0 && extraTasks.length === 0) {
+      tasksHtml = `<p class="rest-day-msg">🌿 يوم راحة — ${workDays} أيام عمل + ${restDays} أيام راحة في الأسبوع</p>`;
+    } else {
+      if (todayTasks.length > 0) {
+        tasksHtml = `<h3 class="today-section-title">مهام اليوم (${hoursPerDay} س)</h3>`;
+        tasksHtml += todayTasks.map((t) => renderTaskCard(t, false)).join("");
+      }
+      if (extraTasks.length > 0) {
+        tasksHtml = (tasksHtml || "") + `<h3 class="today-section-title">مهام متأخرة</h3>`;
+        tasksHtml += extraTasks.map((t) => renderTaskCard(t, true)).join("");
+      }
+      if (!tasksHtml) {
+        tasksHtml = `<p style="color:var(--muted)">لا توجد مهام لهذا اليوم.</p>`;
+      }
+    }
+
+    function renderTaskCard(t, isLate) {
+      return `
+        <div class="task-item ${t.completed ? "done" : ""} ${t.deferred ? "deferred" : ""}">
+          <strong>${cleanDisplayTitle(t.title)}</strong>
+          <p style="color:var(--muted);font-size:0.85rem;margin-top:0.25rem">
+            ${t.week_title}${isLate ? " — متأخرة" : ""} · ${hoursPerDay} س
+          </p>
+          <div class="task-actions">
+            <button class="btn btn-primary btn-sm complete-btn" data-id="${t.id}">✔ إنجاز</button>
+            <button class="btn btn-outline btn-sm defer-btn" data-id="${t.id}">تأجيل</button>
+          </div>
+          <textarea class="notes-input" rows="2" placeholder="ملاحظات..."
+            data-id="${t.id}">${t.notes || ""}</textarea>
+        </div>`;
+    }
 
     app.innerHTML = `
       ${quoteBanner(currentWeek - 1, `✦ تحفيز الأسبوع ${currentWeek}`)}
@@ -324,34 +416,19 @@ async function renderToday() {
         <div>
           <div class="page-header">
             <h1>مهام اليوم</h1>
-            <p>اليوم ${programDay} من 84 — الأسبوع ${currentWeek}، اليوم ${dayInWeek}</p>
+            <p>اليوم ${programDay} من 84 — الأسبوع ${currentWeek}، يوم ${dayInWeek} من ${workDays} أيام عمل</p>
+            ${!isRestDay ? `<p class="hours-today">${hoursPerDay} ساعات مخططة لهذا اليوم</p>` : ""}
           </div>
-
-          ${
-            tasks.length === 0
-              ? '<p style="color:var(--muted)">لا توجد مهام لهذا اليوم. يوم راحة مستحق!</p>'
-              : tasks
-                  .map(
-                    (t) => `
-              <div class="task-item ${t.completed ? "done" : ""} ${t.deferred ? "deferred" : ""}">
-                <strong>${t.title}</strong>
-                <p style="color:var(--muted);font-size:0.85rem;margin-top:0.25rem">${t.week_title}</p>
-                <div class="task-actions">
-                  <button class="btn btn-primary btn-sm complete-btn" data-id="${t.id}">✔ إنجاز</button>
-                  <button class="btn btn-outline btn-sm defer-btn" data-id="${t.id}">تأجيل</button>
-                </div>
-                <textarea class="notes-input" rows="2" placeholder="ملاحظات..."
-                  data-id="${t.id}">${t.notes || ""}</textarea>
-              </div>`
-                  )
-                  .join("")
-          }
+          ${tasksHtml}
         </div>
 
         <aside class="sidebar-card">
           <h3>ملخص اليوم</h3>
           <p style="font-size:0.85rem;color:var(--muted)">الأيام المتبقية</p>
           <div class="stat-big">${daysRemaining}</div>
+          <hr style="margin:1rem 0;border-color:var(--border)" />
+          <p style="font-size:0.85rem;color:var(--muted)">ساعات اليوم</p>
+          <div class="stat-big" style="font-size:1.5rem">${isRestDay ? "—" : hoursPerDay + " س"}</div>
           <hr style="margin:1rem 0;border-color:var(--border)" />
           <p style="font-size:0.85rem;color:var(--muted)">نسبة الإنجاز</p>
           ${progressBar(stats.progressPercent)}

@@ -11,9 +11,13 @@ import {
   getLatestGoal,
   getGoalById,
   getWeeksWithProgress,
+  rebalanceGoalPlan,
   getPlanWithTasks,
   getTodayTasks,
   getGoalStats,
+  buildBalancedWeekTasks,
+  getWorkDaysPerWeek,
+  getHoursPerWorkDay,
   updateTask,
   updateWeekCompletion,
   syncWeekCompletion,
@@ -40,16 +44,20 @@ async function generatePlanWithGemini({ goal, result, reason, hours }) {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+  const workDays = getWorkDaysPerWeek(parseFloat(hours));
+  const hoursPerDay = getHoursPerWorkDay(parseFloat(hours));
+
   const prompt = `قسّم هذا الهدف إلى خطة مدتها 12 أسبوعًا.
 لكل أسبوع:
 - هدف أسبوعي واضح.
-- 3 إلى 5 مهام قابلة للتنفيذ.
+- ${workDays} مهام (مهمة واحدة لكل يوم عمل).
+- كل مهمة قابلة للتنفيذ في ${hoursPerDay} ساعات.
 - ترتيب منطقي من البداية حتى الوصول للنتيجة النهائية.
 
 الهدف: ${goal}
 النتيجة المطلوبة: ${result}
 السبب: ${reason}
-الساعات المتاحة أسبوعيًا: ${hours}
+الساعات المتاحة أسبوعيًا: ${hours} (${hoursPerDay} ساعة × ${workDays} أيام)
 
 أرجع النتيجة بصيغة JSON فقط بدون أي نص إضافي، بالهيكل التالي:
 {
@@ -78,12 +86,12 @@ async function generatePlanWithGemini({ goal, result, reason, hours }) {
     throw new Error("الخطة المُولَّدة لا تحتوي على 12 أسبوعاً");
   }
 
-  // التأكد من أن كل أسبوع يحتوي 3–5 مهام
+  // التأكد من عدد المهام = أيام العمل
   for (const week of plan.weeks) {
-    if (!week.tasks || week.tasks.length < 3) {
+    if (!week.tasks || week.tasks.length < workDays) {
       throw new Error(`الأسبوع ${week.week_number} لا يحتوي على مهام كافية`);
     }
-    week.tasks = week.tasks.slice(0, 5);
+    week.tasks = week.tasks.slice(0, workDays);
   }
 
   return plan;
@@ -112,12 +120,7 @@ function getFallbackPlan(goalData) {
     weeks: themes.map((title, i) => ({
       week_number: i + 1,
       title: `${title} — ${goalData.name}`,
-      tasks: [
-        `حدّد إجراءات الأسبوع ${i + 1} المرتبطة بـ: ${goalData.result}`,
-        `خصّص ${Math.round(goalData.hours / 12)} ساعة للتنفيذ اليومي`,
-        `راجع تقدمك ودوّن ملاحظات حول: ${goalData.reason}`,
-        `نفّذ أهم مهمة لهذا الأسبوع`,
-      ],
+      tasks: buildBalancedWeekTasks(i + 1, goalData),
     })),
   };
 }
@@ -185,14 +188,19 @@ app.get("/api/goals/:id/dashboard", (req, res) => {
   res.json({ goal, weeks, stats });
 });
 
-/** صفحة خطة 12 أسبوع — الأسابيع مع المهام */
+/** صفحة خطة 12 أسبوع */
 app.get("/api/goals/:id/plan", (req, res) => {
+  const plan = getPlanWithTasks(req.params.id);
+  if (!plan.goal) return res.status(404).json({ error: "الهدف غير موجود" });
+  res.json({ ...plan, stats: getGoalStats(req.params.id) });
+});
+
+/** إعادة توازن الخطة يدوياً */
+app.post("/api/goals/:id/rebalance", (req, res) => {
   const goal = getGoalById(req.params.id);
   if (!goal) return res.status(404).json({ error: "الهدف غير موجود" });
-
-  const weeks = getPlanWithTasks(req.params.id);
-  const stats = getGoalStats(req.params.id);
-  res.json({ goal, weeks, stats });
+  rebalanceGoalPlan(req.params.id);
+  res.json({ message: "تم إعادة توازن الخطة", plan: getPlanWithTasks(req.params.id) });
 });
 
 /** صفحة اليوم */
@@ -242,4 +250,11 @@ app.listen(PORT, "0.0.0.0", () => {
   if (!GEMINI_API_KEY) {
     console.warn("⚠️  GEMINI_API_KEY غير مُعرَّف — سيتم استخدام خطة احتياطية");
   }
+}).on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`❌ المنفذ ${PORT} مشغول — أوقفي الخادم القديم أو غيّري PORT في .env`);
+  } else {
+    console.error(err);
+  }
+  process.exit(1);
 });

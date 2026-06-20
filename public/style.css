@@ -374,6 +374,30 @@ body {
   flex-shrink: 0;
 }
 .task-text { flex: 1; font-size: 0.95rem; }
+.task-day-badge {
+  background: var(--black);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.hours-today {
+  color: var(--red);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+.rest-day-msg {
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 1rem;
+}
 
 /* ─── Today page ─── */
 .today-grid {
@@ -501,7 +525,75 @@ body {
   .sidebar-card { position: static; }
 }
 
+.schedule-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.schedule-summary span {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.week-schedule {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+.schedule-day {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  min-height: 70px;
+}
+.schedule-day.work { background: #fff; border-color: var(--black); }
+.schedule-day.rest { background: var(--bg-soft); opacity: 0.7; }
+.schedule-day-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  font-size: 0.65rem;
+}
+.schedule-tag {
+  color: var(--red);
+  font-size: 0.6rem;
+}
+.schedule-task { margin: 0.2rem 0; line-height: 1.3; }
+.schedule-task.done { text-decoration: line-through; opacity: 0.6; }
+.schedule-empty { color: var(--muted); text-align: center; margin-top: 0.5rem; }
+
+.task-hours {
+  font-size: 0.75rem;
+  color: var(--red);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.form-hint {
+  font-size: 0.85rem;
+  color: var(--red);
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+.today-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+  color: var(--red);
+}
+
+@media (max-width: 768px) {
+  .week-schedule { grid-template-columns: repeat(4, 1fr); }
+}
 @media (max-width: 400px) {
+  .week-schedule { grid-template-columns: repeat(2, 1fr); }
   .stats-grid { grid-template-columns: 1fr; }
   .logo-img { height: 36px; }
 }
