@@ -5,6 +5,7 @@
 const app = document.getElementById("app");
 const LOGO = "/assets/logo.jpeg";
 let currentGoalId = localStorage.getItem("goalId");
+let userName = localStorage.getItem("userName") || "";
 
 // ─── عبارات تحفيزية ───
 const MOTIVATIONAL_QUOTES = [
@@ -20,6 +21,8 @@ const MOTIVATIONAL_QUOTES = [
   "الرؤية بدون تنفيذ هي مجرد هلوسة.",
   "لا تنتظر بداية السنة الجديدة أو الشهر القادم لتبدأ؛ اعتبر أن اليوم هو بداية \"أسابيعك الـ 12\" الحاسمة، وابدأ بالعمل فوراً على الأهداف التي ستغير واقعك.",
 ];
+
+const REST_LABELS = ["🌿 راحة", "✨ استرخِ", "💆 تعافٍ", "🧘 توازن"];
 
 // ─── أدوات مساعدة ───
 
@@ -52,17 +55,15 @@ function loading() {
   app.innerHTML = `<div class="loading"><div class="spinner"></div><p style="margin-top:1rem">جاري التحميل...</p></div>`;
 }
 
-/** عبارة واحدة — تُستخدم في كل الصفحات */
 function quoteBanner(index, label = "💡 تذكير") {
   const q = MOTIVATIONAL_QUOTES[index % MOTIVATIONAL_QUOTES.length];
   return `
-    <div class="quote-banner">
+    <div class="quote-banner animate-in">
       <span class="quote-label">${label}</span>
       <p>${q}</p>
     </div>`;
 }
 
-/** عرض احتفال بإنجاز أسبوع (مرة واحدة لكل أسبوع) */
 function showWeekCelebration(weekNumber) {
   const key = `celebrated_${currentGoalId}_w${weekNumber}`;
   if (localStorage.getItem(key)) return;
@@ -71,7 +72,7 @@ function showWeekCelebration(weekNumber) {
   const modal = document.createElement("div");
   modal.className = "celebration-modal";
   modal.innerHTML = `
-    <div class="celebration-box">
+    <div class="celebration-box animate-in">
       <div class="celebration-icon">🎉</div>
       <h2>أحسنت! أنجزت الأسبوع ${weekNumber}</h2>
       <p class="celebration-quote">${quote}</p>
@@ -84,7 +85,6 @@ function showWeekCelebration(weekNumber) {
   };
 }
 
-/** تدوير عبارة في الرئيسية فقط */
 function initHomeQuoteRotation() {
   const textEl = document.getElementById("homeQuote");
   if (!textEl) return;
@@ -100,10 +100,41 @@ function initHomeQuoteRotation() {
   }, 8000);
 }
 
+function cleanDisplayTitle(title) {
+  return String(title).replace(/\s*\([\d.]+\s*س\s*—[^)]*\)\s*$/u, "").trim();
+}
+
+function getDisplayName(goal) {
+  return goal?.user_name || userName || "بطل";
+}
+
+// ─── الوضع الداكن ───
+function initTheme() {
+  const toggle = document.getElementById("themeToggle");
+  if (!toggle) return;
+
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      toggle.textContent = "☀️";
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      toggle.textContent = "🌙";
+    }
+  }
+
+  applyTheme(localStorage.getItem("theme") || "light");
+  toggle.addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+  });
+}
+
 // ─── 1. الصفحة الرئيسية ───
 function renderHome() {
   app.innerHTML = `
-    <section class="hero">
+    <section class="hero animate-in">
       <div>
         <div class="hero-badge"><span class="dot"></span> The 12 Week Year</div>
         <h1>حوّل <span>12 أسبوعاً</span> إلى سنة كاملة من الإنجاز</h1>
@@ -111,6 +142,10 @@ function renderHome() {
           بدلاً من الأهداف السنوية البعيدة، ساعدك هذه المنصة على تحويل هدفك الكبير
           إلى خطة عملية واضحة لمدة 12 أسبوعاً — مهمة تلو الأخرى.
         </p>
+        <div class="form-group" style="max-width:320px;margin-bottom:1.25rem">
+          <label for="userNameInput">اسمك (للتحية الشخصية)</label>
+          <input type="text" id="userNameInput" placeholder="مثال: فاطمة" value="${userName}" />
+        </div>
         <div class="hero-actions">
           <a href="#/create" class="btn btn-primary">ابدأ التخطيط</a>
           <a href="#about" class="btn btn-outline">كيف يعمل؟</a>
@@ -137,7 +172,7 @@ function renderHome() {
         ]
           .map(
             (s) => `
-          <div class="method-card">
+          <div class="method-card animate-in">
             <div class="method-num">${s.n}</div>
             <h3>${s.t}</h3>
             <p>${s.d}</p>
@@ -155,6 +190,13 @@ function renderHome() {
       <p id="homeQuote"></p>
     </div>
   `;
+
+  const nameInput = document.getElementById("userNameInput");
+  nameInput?.addEventListener("input", () => {
+    userName = nameInput.value.trim();
+    localStorage.setItem("userName", userName);
+  });
+
   initHomeQuoteRotation();
 }
 
@@ -166,7 +208,7 @@ function renderCreate() {
       <h1>إنشاء هدف جديد</h1>
       <p>أدخل تفاصيل هدفك وسنُنشئ خطة 12 أسبوعاً بالذكاء الاصطناعي</p>
     </div>
-    <form id="goalForm" class="form-card">
+    <form id="goalForm" class="form-card animate-in">
       <div class="form-group">
         <label>اسم الهدف</label>
         <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
@@ -179,11 +221,23 @@ function renderCreate() {
         <label>سبب الهدف</label>
         <textarea name="reason" rows="2" required placeholder="لماذا هذا الهدف مهم لك؟"></textarea>
       </div>
-      <div class="form-group">
-        <label>عدد الساعات المتاحة أسبوعياً</label>
-        <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
-        <p class="form-hint" id="hoursPreview">20 ساعة = 4 أيام عمل × 5 س/يوم + 3 أيام راحة</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>عدد الساعات المتاحة أسبوعياً</label>
+          <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
+        </div>
+        <div class="form-group">
+          <label>أيام العمل في الأسبوع</label>
+          <select name="work_days" id="workDaysInput">
+            <option value="5" selected>5 أيام (يومان راحة)</option>
+            <option value="4">4 أيام (3 أيام راحة)</option>
+            <option value="3">3 أيام (4 أيام راحة)</option>
+            <option value="6">6 أيام (يوم راحة)</option>
+            <option value="2">2 أيام (5 أيام راحة)</option>
+          </select>
+        </div>
       </div>
+      <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
       <div id="formError" class="alert hidden"></div>
       <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%">
         إنشاء خطة 12 أسبوع
@@ -194,13 +248,19 @@ function renderCreate() {
 
   function updateHoursPreview() {
     const h = parseFloat(document.getElementById("hoursInput").value) || 0;
-    const workDays = Math.min(5, Math.max(2, Math.round(h / 5)));
-    const perDay = Math.round((h / workDays) * 10) / 10;
+    const workDays = itemsWorkDays();
+    const perDay = workDays > 0 ? Math.round((h / workDays) * 10) / 10 : 0;
     const rest = 7 - workDays;
     document.getElementById("hoursPreview").textContent =
-      `${h} ساعة = ${workDays} أيام عمل × ${perDay} س/يوم + ${rest} أيام راحة`;
+      `${h} ساعة = ${workDays} أيام عمل × ${perDay} س/يوم + ${rest} ${rest === 1 ? "يوم راحة" : "أيام راحة"}`;
   }
+
+  function itemsWorkDays() {
+    return parseInt(document.getElementById("workDaysInput").value) || 5;
+  }
+
   document.getElementById("hoursInput").addEventListener("input", updateHoursPreview);
+  document.getElementById("workDaysInput").addEventListener("change", updateHoursPreview);
   updateHoursPreview();
 
   document.getElementById("goalForm").addEventListener("submit", async (e) => {
@@ -221,6 +281,8 @@ function renderCreate() {
           result: fd.get("result"),
           reason: fd.get("reason"),
           hours: fd.get("hours"),
+          work_days: fd.get("work_days"),
+          user_name: userName,
         }),
       });
 
@@ -245,13 +307,13 @@ function renderWeekSchedule(workDays, hoursPerDay, tasks) {
     const dayTasks = tasks.filter((t) => t.day_in_week === d);
     const isWork = d <= workDays;
     html += `
-      <div class="schedule-day ${isWork ? "work" : "rest"} ${dayTasks.some(t=>t.completed)?"has-done":""}">
+      <div class="schedule-day ${isWork ? "work" : "rest"} ${dayTasks.some((t) => t.completed) ? "has-done" : ""} animate-in">
         <div class="schedule-day-head">
           <span>${dayNames[d - 1] || "يوم " + d}</span>
-          <span class="schedule-tag">${isWork ? hoursPerDay + " س" : "راحة"}</span>
+          <span class="schedule-tag">${isWork ? hoursPerDay + " س" : REST_LABELS[(d - 1) % REST_LABELS.length]}</span>
         </div>
         ${dayTasks.length
-          ? dayTasks.map(t => `<p class="schedule-task ${t.completed?"done":""}">${t.completed?"✔ ":""}${cleanDisplayTitle(t.title)}</p>`).join("")
+          ? dayTasks.map((t) => `<p class="schedule-task ${t.completed ? "done" : ""}">${t.completed ? "✔ " : ""}${cleanDisplayTitle(t.title)}</p>`).join("")
           : `<p class="schedule-empty">${isWork ? "—" : "🌿"}</p>`}
       </div>`;
   }
@@ -259,8 +321,8 @@ function renderWeekSchedule(workDays, hoursPerDay, tasks) {
   return html;
 }
 
-function cleanDisplayTitle(title) {
-  return String(title).replace(/\s*\([\d.]+\s*س\s*—[^)]*\)\s*$/u, "").trim();
+function exportPlanPdf() {
+  window.print();
 }
 
 async function renderPlan() {
@@ -270,15 +332,28 @@ async function renderPlan() {
   try {
     const { goal, weeks, stats, workDays, hoursPerDay, restDays } =
       await api(`/api/goals/${currentGoalId}/plan`);
+
+    if (goal.user_name) {
+      userName = goal.user_name;
+      localStorage.setItem("userName", userName);
+    }
+
+    const programDay = Math.min(Math.max(
+      Math.floor((Date.now() - new Date(goal.start_date + "T00:00:00")) / 86400000) + 1,
+      1
+    ), 84);
+
     const activeWeek = weeks.find((w) => {
       const pct = w.total_tasks > 0 ? (w.completed_tasks / w.total_tasks) * 100 : 0;
       return pct < 100;
     });
     const weekNum = activeWeek ? activeWeek.week_number : 12;
+    const displayName = getDisplayName(goal);
 
     app.innerHTML = `
       ${quoteBanner(weekNum - 1, `✦ الأسبوع ${weekNum}`)}
-      <div class="page-header">
+      <div class="page-header animate-in">
+        <p class="greeting-text">مرحباً <strong>${displayName}</strong>، أنت في اليوم <strong>${programDay}</strong> من 84</p>
         <h1>خطة 12 أسبوع</h1>
         <p>الهدف: <strong>${goal.name}</strong> — ${goal.result}</p>
         <div class="schedule-summary">
@@ -290,18 +365,20 @@ async function renderPlan() {
         <div style="max-width:400px;margin-top:0.75rem">${progressBar(stats.progressPercent)}</div>
       </div>
 
-      <div class="page-actions">
+      <div class="page-actions no-print">
         <a href="#/today" class="btn btn-primary btn-sm">مهام اليوم</a>
         <a href="#/stats" class="btn btn-outline btn-sm">الإحصائيات</a>
+        <button class="btn btn-outline btn-sm" id="exportPdfBtn">📄 تصدير الخطة كـ PDF</button>
       </div>
 
-      <div id="weeksList">
+      <div id="weeksList" class="print-area">
         ${weeks
-          .map((w) => {
+          .map((w, idx) => {
             const pct = w.total_tasks > 0 ? Math.round((w.completed_tasks / w.total_tasks) * 100) : 0;
             const isDone = w.completed || pct === 100;
             return `
-            <div class="week-card ${isDone ? "done" : ""}" data-week-id="${w.id}" data-week-num="${w.week_number}">
+            <div class="week-card ${isDone ? "done" : ""} animate-in" style="animation-delay:${idx * 0.05}s"
+              data-week-id="${w.id}" data-week-num="${w.week_number}">
               <div class="week-header">
                 <div>
                   <span class="week-badge">الأسبوع ${w.week_number}</span>
@@ -315,7 +392,7 @@ async function renderPlan() {
                 ${w.tasks
                   .map(
                     (t) => `
-                  <li class="${t.completed ? "done" : ""}">
+                  <li class="${t.completed ? "done task-complete-anim" : ""}">
                     <input type="checkbox" class="task-check" data-id="${t.id}"
                       ${t.completed ? "checked" : ""} />
                     <span class="task-day-badge">يوم ${t.day_in_week}</span>
@@ -331,6 +408,8 @@ async function renderPlan() {
       </div>
     `;
 
+    document.getElementById("exportPdfBtn")?.addEventListener("click", exportPlanPdf);
+
     document.querySelectorAll(".task-check").forEach((cb) => {
       cb.addEventListener("change", async (e) => {
         const weekCard = e.target.closest(".week-card");
@@ -343,6 +422,7 @@ async function renderPlan() {
         });
 
         if (completed) {
+          e.target.closest("li")?.classList.add("task-complete-anim");
           const checks = weekCard.querySelectorAll(".task-check");
           const allDone = [...checks].every((c) => c.checked);
           if (allDone) showWeekCelebration(weekNum);
@@ -369,17 +449,32 @@ async function renderToday() {
     const {
       goal, programDay, currentWeek, dayInWeek,
       daysRemaining, stats,
-      workDays = 4, hoursPerDay = 5, restDays = 3, isRestDay = false,
+      workDays = 5, hoursPerDay = 4, restDays = 2,
+      isRestDay = false, restDayContent = null,
     } = data;
 
+    const displayName = getDisplayName(goal);
     const todayTasks = [...tasks];
     const extraTasks = [...deferredTasks, ...carryOverTasks.filter(
       (c) => !deferredTasks.some((d) => d.id === c.id) && !tasks.some((t) => t.id === c.id)
     )];
 
     let tasksHtml;
+
     if (isRestDay && todayTasks.length === 0 && extraTasks.length === 0) {
-      tasksHtml = `<p class="rest-day-msg">🌿 يوم راحة — ${workDays} أيام عمل + ${restDays} أيام راحة في الأسبوع</p>`;
+      tasksHtml = `
+        <div class="rest-day-card animate-in">
+          <div class="rest-day-icon">🌿</div>
+          <h3>يوم راحة مستحق</h3>
+          <p class="rest-day-message">${restDayContent?.message || "راحتك جزء من النجاح — استعد للأيام القادمة بذهن صافٍ."}</p>
+          ${restDayContent?.optionalTasks?.length ? `
+            <div class="optional-tasks">
+              <p class="optional-label">مهام اختيارية خفيفة (إن رغبت):</p>
+              <ul>
+                ${restDayContent.optionalTasks.map((t) => `<li>${t}</li>`).join("")}
+              </ul>
+            </div>` : ""}
+        </div>`;
     } else {
       if (todayTasks.length > 0) {
         tasksHtml = `<h3 class="today-section-title">مهام اليوم (${hoursPerDay} س)</h3>`;
@@ -396,12 +491,12 @@ async function renderToday() {
 
     function renderTaskCard(t, isLate) {
       return `
-        <div class="task-item ${t.completed ? "done" : ""} ${t.deferred ? "deferred" : ""}">
+        <div class="task-item ${t.completed ? "done" : ""} ${t.deferred ? "deferred" : ""} animate-in">
           <strong>${cleanDisplayTitle(t.title)}</strong>
           <p style="color:var(--muted);font-size:0.85rem;margin-top:0.25rem">
             ${t.week_title}${isLate ? " — متأخرة" : ""} · ${hoursPerDay} س
           </p>
-          <div class="task-actions">
+          <div class="task-actions no-print">
             <button class="btn btn-primary btn-sm complete-btn" data-id="${t.id}">✔ إنجاز</button>
             <button class="btn btn-outline btn-sm defer-btn" data-id="${t.id}">تأجيل</button>
           </div>
@@ -414,15 +509,16 @@ async function renderToday() {
       ${quoteBanner(currentWeek - 1, `✦ تحفيز الأسبوع ${currentWeek}`)}
       <div class="today-grid">
         <div>
-          <div class="page-header">
+          <div class="page-header animate-in">
+            <p class="greeting-text">مرحباً <strong>${displayName}</strong>، أنت في اليوم <strong>${programDay}</strong></p>
             <h1>مهام اليوم</h1>
-            <p>اليوم ${programDay} من 84 — الأسبوع ${currentWeek}، يوم ${dayInWeek} من ${workDays} أيام عمل</p>
+            <p>اليوم ${programDay} من 84 — الأسبوع ${currentWeek}، يوم ${dayInWeek} من 7</p>
             ${!isRestDay ? `<p class="hours-today">${hoursPerDay} ساعات مخططة لهذا اليوم</p>` : ""}
           </div>
           ${tasksHtml}
         </div>
 
-        <aside class="sidebar-card">
+        <aside class="sidebar-card animate-in">
           <h3>ملخص اليوم</h3>
           <p style="font-size:0.85rem;color:var(--muted)">الأيام المتبقية</p>
           <div class="stat-big">${daysRemaining}</div>
@@ -432,6 +528,9 @@ async function renderToday() {
           <hr style="margin:1rem 0;border-color:var(--border)" />
           <p style="font-size:0.85rem;color:var(--muted)">نسبة الإنجاز</p>
           ${progressBar(stats.progressPercent)}
+          <hr style="margin:1rem 0;border-color:var(--border)" />
+          <p style="font-size:0.85rem;color:var(--muted)">جدول الأسبوع</p>
+          <p style="font-size:0.9rem;font-weight:600">${workDays} أيام عمل + ${restDays} راحة</p>
           <hr style="margin:1rem 0;border-color:var(--border)" />
           <p style="font-size:0.85rem;color:var(--muted)">الهدف: ${goal.name}</p>
           <div class="quote-sidebar">${MOTIVATIONAL_QUOTES[programDay % MOTIVATIONAL_QUOTES.length]}</div>
@@ -471,9 +570,11 @@ async function renderStats() {
   try {
     const { goal, stats } = await api(`/api/goals/${currentGoalId}/stats`);
     const quoteIdx = Math.min(10, Math.floor(stats.progressPercent / 10));
+    const displayName = getDisplayName(goal);
 
     app.innerHTML = `
-      <div class="page-header">
+      <div class="page-header animate-in">
+        <p class="greeting-text">مرحباً <strong>${displayName}</strong></p>
         <h1>لوحة الإحصائيات</h1>
         <p>الهدف: ${goal.name}</p>
       </div>
@@ -481,25 +582,25 @@ async function renderStats() {
       ${quoteBanner(quoteIdx, "✦ استمر")}
 
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card animate-in">
           <div class="value red">${stats.progressPercent}%</div>
           <div class="label">نسبة الإنجاز الكلية</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card animate-in" style="animation-delay:0.05s">
           <div class="value">${stats.completedTasks}</div>
           <div class="label">مهام مكتملة</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card animate-in" style="animation-delay:0.1s">
           <div class="value">${stats.remainingTasks}</div>
           <div class="label">مهام متبقية</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card animate-in" style="animation-delay:0.15s">
           <div class="value">${stats.deferredTasks}</div>
           <div class="label">مهام مؤجّلة</div>
         </div>
       </div>
 
-      <div class="chart-box">
+      <div class="chart-box animate-in">
         <h3>التقدم الأسبوعي</h3>
         ${stats.weeklyStats
           .map((w) => {
@@ -514,7 +615,7 @@ async function renderStats() {
           .join("")}
       </div>
 
-      <div class="chart-box">
+      <div class="chart-box animate-in">
         <h3>نظرة عامة</h3>
         <canvas id="overviewChart" height="200"></canvas>
       </div>
@@ -532,6 +633,9 @@ function drawOverviewChart(stats) {
   const canvas = document.getElementById("overviewChart");
   if (!canvas) return;
 
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const textColor = isDark ? "#f3f4f6" : "#0a0a0a";
+
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.parentElement.clientWidth - 48;
@@ -548,7 +652,7 @@ function drawOverviewChart(stats) {
 
   const slices = [
     { value: stats.completedTasks, color: "#8b1a1a", label: "مكتملة" },
-    { value: stats.remainingTasks - stats.deferredTasks, color: "#0a0a0a", label: "متبقية" },
+    { value: stats.remainingTasks - stats.deferredTasks, color: isDark ? "#e5e7eb" : "#0a0a0a", label: "متبقية" },
     { value: stats.deferredTasks, color: "#9ca3af", label: "مؤجّلة" },
   ].filter((s) => s.value > 0);
 
@@ -564,7 +668,7 @@ function drawOverviewChart(stats) {
     angle += slice;
   });
 
-  ctx.fillStyle = "#0a0a0a";
+  ctx.fillStyle = textColor;
   ctx.font = "bold 22px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`${stats.progressPercent}%`, cx, cy + 7);
@@ -573,7 +677,7 @@ function drawOverviewChart(stats) {
   slices.forEach((s) => {
     ctx.fillStyle = s.color;
     ctx.fillRect(lx, 168, 12, 12);
-    ctx.fillStyle = "#0a0a0a";
+    ctx.fillStyle = textColor;
     ctx.font = "11px sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(`${s.label} (${s.value})`, lx + 16, 178);
@@ -605,11 +709,17 @@ document.getElementById("navToggle")?.addEventListener("click", () => {
 });
 
 async function init() {
+  initTheme();
+
   if (!currentGoalId) {
     try {
       const goal = await api("/api/goals/latest");
       currentGoalId = String(goal.id);
       localStorage.setItem("goalId", currentGoalId);
+      if (goal.user_name) {
+        userName = goal.user_name;
+        localStorage.setItem("userName", userName);
+      }
     } catch { /* لا يوجد هدف */ }
   }
   router();

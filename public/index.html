@@ -5,16 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>12 Week of Year — منصة النمو</title>
   <link rel="stylesheet" href="/style.css" />
+  <script>
+    // تطبيق الوضع الداكن فوراً قبل تحميل الصفحة
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  </script>
 </head>
 <body>
 
-  <!-- شريط التنقل -->
   <header class="site-header">
     <div class="container header-inner">
       <a href="#/" class="logo-link">
         <img src="/assets/logo.jpeg" alt="12 Week of Year" class="logo-img" />
       </a>
-      <button class="nav-toggle" id="navToggle" aria-label="القائمة">☰</button>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع">🌙</button>
+        <button class="nav-toggle" id="navToggle" aria-label="القائمة">☰</button>
+      </div>
       <nav class="site-nav" id="siteNav">
         <a href="#/">الرئيسية</a>
         <a href="#/create">إنشاء هدف</a>
