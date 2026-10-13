@@ -134,7 +134,7 @@ function initTheme() {
 // ─── 1. الصفحة الرئيسية ───
 function renderHome() {
   app.innerHTML = `
-    <section class="hero animate-in">
+    <section class="hero animate-in row g-4 align-items-center">
       <div>
         <div class="hero-badge"><span class="dot"></span> The 12 Week Year</div>
         <h1>حوّل <span>12 أسبوعاً</span> إلى سنة كاملة من الإنجاز</h1>
@@ -151,7 +151,7 @@ function renderHome() {
           <a href="#about" class="btn btn-outline">كيف يعمل؟</a>
         </div>
       </div>
-      <div class="hero-visual">
+      <div class="hero-visual rounded-4 shadow-sm">
         <img src="${LOGO}" alt="12 Week of Year" />
       </div>
     </section>
@@ -208,7 +208,7 @@ function renderCreate() {
       <h1>إنشاء هدف جديد</h1>
       <p>أدخل تفاصيل هدفك وسنُنشئ خطة 12 أسبوعاً بالذكاء الاصطناعي</p>
     </div>
-    <form id="goalForm" class="form-card animate-in">
+    <form id="goalForm" class="form-card animate-in p-4 p-md-5 rounded-4 shadow-sm">
       <div class="form-group">
         <label>اسم الهدف</label>
         <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
@@ -238,8 +238,8 @@ function renderCreate() {
         </div>
       </div>
       <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
-      <div id="formError" class="alert hidden"></div>
-      <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%">
+      <div id="formError" class="alert alert-danger hidden"></div>
+      <button type="submit" class="btn btn-primary w-100" id="submitBtn">
         إنشاء خطة 12 أسبوع
       </button>
     </form>
@@ -377,7 +377,7 @@ async function renderPlan() {
             const pct = w.total_tasks > 0 ? Math.round((w.completed_tasks / w.total_tasks) * 100) : 0;
             const isDone = w.completed || pct === 100;
             return `
-            <div class="week-card ${isDone ? "done" : ""} animate-in" style="animation-delay:${idx * 0.05}s"
+            <div class="week-card ${isDone ? "done" : ""} animate-in shadow-sm" style="animation-delay:${idx * 0.05}s"
               data-week-id="${w.id}" data-week-num="${w.week_number}">
               <div class="week-header">
                 <div>
@@ -518,7 +518,7 @@ async function renderToday() {
           ${tasksHtml}
         </div>
 
-        <aside class="sidebar-card animate-in">
+        <aside class="sidebar-card animate-in shadow-sm">
           <h3>ملخص اليوم</h3>
           <p style="font-size:0.85rem;color:var(--muted)">الأيام المتبقية</p>
           <div class="stat-big">${daysRemaining}</div>
@@ -582,25 +582,25 @@ async function renderStats() {
       ${quoteBanner(quoteIdx, "✦ استمر")}
 
       <div class="stats-grid">
-        <div class="stat-card animate-in">
+        <div class="stat-card animate-in shadow-sm">
           <div class="value red">${stats.progressPercent}%</div>
           <div class="label">نسبة الإنجاز الكلية</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.05s">
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.05s">
           <div class="value">${stats.completedTasks}</div>
           <div class="label">مهام مكتملة</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.1s">
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.1s">
           <div class="value">${stats.remainingTasks}</div>
           <div class="label">مهام متبقية</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.15s">
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.15s">
           <div class="value">${stats.deferredTasks}</div>
           <div class="label">مهام مؤجّلة</div>
         </div>
       </div>
 
-      <div class="chart-box animate-in">
+      <div class="chart-box animate-in rounded-4 shadow-sm">
         <h3>التقدم الأسبوعي</h3>
         ${stats.weeklyStats
           .map((w) => {
@@ -615,7 +615,7 @@ async function renderStats() {
           .join("")}
       </div>
 
-      <div class="chart-box animate-in">
+      <div class="chart-box animate-in rounded-4 shadow-sm">
         <h3>نظرة عامة</h3>
         <canvas id="overviewChart" height="200"></canvas>
       </div>

@@ -17,6 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -52,39 +53,44 @@ function parseGeminiJson(rawText) {
   }
 }
 
+/**
+ * نبني البرومبت المطلوب من المستخدم مع تعليمات إخراج JSON فقط.
+ * نضيف workDays في السياق لضبط كثافة المهام على أيام العمل.
+ */
+function buildGeminiPrompt({ goal, result, reason, hours, workDays }) {
+  const userPrompt =
+    `قسّم هذا الهدف إلى خطة 12 أسبوعاً. لكل أسبوع: هدف واضح، 3-5 مهام مرتبة منطقياً. ` +
+    `الهدف: ${goal}، النتيجة: ${result}، السبب: ${reason}، الساعات: ${hours}`;
+
+  return `${userPrompt}
+
+معلومة إضافية للتوزيع: أيام العمل الفعلية أسبوعياً = ${workDays} أيام.
+اجعل المهام قابلة للقياس وعملية ومناسبة للوقت المتاح.
+
+أعد النتيجة بصيغة JSON فقط وفق البنية التالية:
+{
+  "weeks": [
+    {
+      "week_number": 1,
+      "title": "عنوان واضح للأسبوع",
+      "tasks": [
+        "مهمة 1",
+        "مهمة 2",
+        "مهمة 3"
+      ]
+    }
+  ]
+}
+لا تضف أي نص خارج JSON.`;
+}
+
 /** توليد خطة 12 أسبوعاً عبر Gemini */
 async function generatePlanWithGemini({ goal, result, reason, hours, workDays, userName }) {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY غير مُعرَّف");
 
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-  const prompt = `أنت خبير في التخطيط الاستراتيجي ومنهجية "سنة الـ 12 أسبوعاً".
-قسّم هذا الهدف الكبير إلى خطة عمل دقيقة ومكثفة لمدة 12 أسبوعاً فقط.
-
-المعطيات:
-- الهدف الأساسي: ${goal}
-- النتيجة النهائية المطلوبة: ${result}
-- الدافع/السبب: ${reason}
-- الوقت المتاح للتنفيذ: ${hours} ساعة أسبوعياً
-
-المطلوب لكل أسبوع:
-1. عنوان ملهم يوضح التركيز الأساسي للأسبوع.
-2. من 3 إلى 5 مهام "عملية جداً" وقابلة للقياس (Actionable Tasks).
-3. يجب أن تتناسب صعوبة المهام مع عدد الساعات المتاحة (${hours} ساعة).
-4. تأكد من وجود تدرج منطقي بحيث يكون الأسبوع 12 هو مرحلة الإنهاء أو الإطلاق.
-
-يجب أن تكون الاستجابة بصيغة JSON فقط، بالهيكل التالي:
-{
-  "weeks": [
-    {
-      "week_number": 1,
-      "title": "عنوان الأسبوع",
-      "tasks": ["مهمة 1 تفصيلية", "مهمة 2 تفصيلية", "مهمة 3 تفصيلية"]
-    }
-  ]
-}
-ملاحظة: لا تكتب أي نصوص خارج الـ JSON.`;
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const prompt = buildGeminiPrompt({ goal, result, reason, hours, workDays, userName });
 
   const response = await model.generateContent(prompt);
   const plan = parseGeminiJson(response.response.text());
@@ -210,6 +216,7 @@ app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.h
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 يعمل على http://localhost:${PORT}`);
   if (!GEMINI_API_KEY) console.warn("⚠️ GEMINI_API_KEY غير مُعرَّف");
+  else console.log(`🤖 Gemini model: ${GEMINI_MODEL}`);
 });
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") console.error(`❌ المنفذ ${PORT} مشغول`);
