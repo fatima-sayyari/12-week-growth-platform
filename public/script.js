@@ -134,41 +134,65 @@ function initTheme() {
 // ─── 1. الصفحة الرئيسية ───
 function renderHome() {
   app.innerHTML = `
-    <section class="hero animate-in row g-4 align-items-center">
-      <div>
-        <div class="hero-badge"><span class="dot"></span> The 12 Week Year</div>
-        <h1>حوّل <span>12 أسبوعاً</span> إلى سنة كاملة من الإنجاز</h1>
+    <section class="hero hero-immersive animate-in">
+      <div class="hero-aurora"></div>
+      <div class="hero-content">
+        <div class="hero-badge pulse-ring"><span class="dot"></span> منصة 12-Week Growth Platform</div>
+        <h1>خطة تنقلك من <span>التفكير</span> إلى <span>الإنجاز الحقيقي</span> خلال 12 أسبوعاً</h1>
         <p>
-          بدلاً من الأهداف السنوية البعيدة، ساعدك هذه المنصة على تحويل هدفك الكبير
-          إلى خطة عملية واضحة لمدة 12 أسبوعاً — مهمة تلو الأخرى.
+          تجربة تخطيط ذكية ومكثفة تحوّل هدفك الكبير إلى خطوات أسبوعية قابلة للتنفيذ،
+          مع متابعة يومية تشدّك للاستمرار.
         </p>
-        <div class="form-group" style="max-width:320px;margin-bottom:1.25rem">
-          <label for="userNameInput">اسمك (للتحية الشخصية)</label>
-          <input type="text" id="userNameInput" placeholder="مثال: فاطمة" value="${userName}" />
+        <div class="form-group hero-name-input">
+          <label for="userNameInput">اسمك (لإضفاء طابع شخصي)</label>
+          <input type="text" id="userNameInput" placeholder="مثال: فاطمة" value="${userName}" class="shadow-sm" />
         </div>
-        <div class="hero-actions">
+        <div class="hero-actions hero-actions-strong">
           <a href="#/create" class="btn btn-primary">ابدأ التخطيط</a>
-          <a href="#about" class="btn btn-outline">كيف يعمل؟</a>
+          <a href="#about" class="btn btn-outline">استكشف التجربة</a>
+        </div>
+        <div class="hero-mini-metrics">
+          <div><strong>12</strong><span>أسبوع تركيز</span></div>
+          <div><strong>84</strong><span>يوم تنفيذ</span></div>
+          <div><strong>∞</strong><span>إمكانية التطوير</span></div>
         </div>
       </div>
-      <div class="hero-visual rounded-4 shadow-sm">
-        <img src="${LOGO}" alt="12 Week of Year" />
+      <div class="hero-visual hero-visual-card rounded-4 shadow-sm">
+        <div class="logo-glow-wrap">
+          <img src="${LOGO}" alt="12 Week of Year" />
+        </div>
+        <p class="hero-visual-caption">"لا تنتظر السنة القادمة... اصنع نقلة هذا الأسبوع."</p>
       </div>
     </section>
 
-    ${quoteBanner(0, "✦ عبارة اليوم")}
+    <section class="impact-strip animate-in">
+      <article class="impact-card">
+        <h3>🎯 هدف واضح</h3>
+        <p>عرّفي ما تريدين الوصول إليه بلغة نتيجة قابلة للقياس.</p>
+      </article>
+      <article class="impact-card">
+        <h3>🧠 خطة ذكية</h3>
+        <p>الذكاء الاصطناعي يبني لك خارطة 12 أسبوعاً بمهام عملية.</p>
+      </article>
+      <article class="impact-card">
+        <h3>⚡ تنفيذ يومي</h3>
+        <p>تابعي يومك، أنجزي، أجّلي عند الحاجة، وراقبي نسبة التقدم.</p>
+      </article>
+    </section>
+
+    ${quoteBanner(0, "✦ شرارة اليوم")}
 
     <section id="about">
       <h2 class="section-title">الفكرة ببساطة</h2>
       <p class="section-desc">
-        مستوحى من كتاب The 12 Week Year — نضغّط سنة كاملة من التخطيط في 12 أسبوعاً
-        مع أهداف أسبوعية ومهام يومية قابلة للقياس.
+        مستوحى من كتاب The 12 Week Year — نضعك داخل دورة تركيز قصيرة لكنها عالية التأثير،
+        حيث كل أسبوع له دور واضح في تحقيق النتيجة النهائية.
       </p>
-      <div class="method-grid">
+      <div class="method-grid method-grid-premium">
         ${[
-          { n: "01", t: "حدّد هدفك", d: "اسم الهدف، النتيجة المطلوبة، السبب، والوقت المتاح." },
-          { n: "02", t: "خطة ذكية", d: "الذكاء الاصطناعي يقسّم هدفك إلى 12 أسبوعاً بمهام واضحة." },
-          { n: "03", t: "نفّذ يومياً", d: "تابع مهامك، سجّل تقدمك، وراقب إنجازك أسبوعاً بعد أسبوع." },
+          { n: "01", t: "حدّد هدفك", d: "اكتب الهدف والنتيجة والسبب وساعاتك المتاحة." },
+          { n: "02", t: "احصل على خارطة 12 أسبوع", d: "خطة أسبوعية مركزة مع مهام مرتبة ومنطقية." },
+          { n: "03", t: "حوّل الانضباط إلى عادة", d: "لوحة يومية + نسب تقدم + إحصائيات تحفزك للاستمرار." },
         ]
           .map(
             (s) => `
@@ -180,6 +204,13 @@ function renderHome() {
           )
           .join("")}
       </div>
+
+      <div class="timeline-lite">
+        <div class="timeline-item"><span>الأسبوع 1-4</span><p>تأسيس العادات وبناء الزخم</p></div>
+        <div class="timeline-item"><span>الأسبوع 5-8</span><p>تسريع الأداء والتطبيق العملي</p></div>
+        <div class="timeline-item"><span>الأسبوع 9-12</span><p>الإنهاء، الإطلاق، وحصد النتيجة</p></div>
+      </div>
+
       <div class="text-center">
         <a href="#/create" class="btn btn-primary">ابدأ التخطيط الآن</a>
       </div>
@@ -203,46 +234,57 @@ function renderHome() {
 // ─── 2. صفحة إنشاء الهدف ───
 function renderCreate() {
   app.innerHTML = `
-    ${quoteBanner(10, "✦ قبل أن تبدأ")}
-    <div class="page-header text-center">
-      <h1>إنشاء هدف جديد</h1>
-      <p>أدخل تفاصيل هدفك وسنُنشئ خطة 12 أسبوعاً بالذكاء الاصطناعي</p>
-    </div>
-    <form id="goalForm" class="form-card animate-in p-4 p-md-5 rounded-4 shadow-sm">
-      <div class="form-group">
-        <label>اسم الهدف</label>
-        <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
-      </div>
-      <div class="form-group">
-        <label>النتيجة المطلوبة</label>
-        <textarea name="result" rows="2" required placeholder="ماذا تريد أن تحقق بعد 12 أسبوعاً؟"></textarea>
-      </div>
-      <div class="form-group">
-        <label>سبب الهدف</label>
-        <textarea name="reason" rows="2" required placeholder="لماذا هذا الهدف مهم لك؟"></textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>عدد الساعات المتاحة أسبوعياً</label>
-          <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
-        </div>
-        <div class="form-group">
-          <label>أيام العمل في الأسبوع</label>
-          <select name="work_days" id="workDaysInput">
-            <option value="5" selected>5 أيام (يومان راحة)</option>
-            <option value="4">4 أيام (3 أيام راحة)</option>
-            <option value="3">3 أيام (4 أيام راحة)</option>
-            <option value="6">6 أيام (يوم راحة)</option>
-            <option value="2">2 أيام (5 أيام راحة)</option>
-          </select>
+    ${quoteBanner(10, "✦ قبل الانطلاق")}
+    <section class="create-layout animate-in">
+      <div class="create-intro">
+        <h1>صمّمي هدفك التالي بثقة</h1>
+        <p>
+          هذه الخطوة هي أهم قرار: كلما كان الهدف واضحًا، كانت الخطة أذكى والتنفيذ أسرع.
+          اكتبي التفاصيل وسنحوّلها مباشرةً إلى خارطة 12 أسبوع.
+        </p>
+        <div class="create-tips">
+          <div>✅ اكتبي النتيجة كأنها حدثت بالفعل</div>
+          <div>✅ اجعلي السبب شخصيًا ومحفزًا</div>
+          <div>✅ كوني واقعية في عدد الساعات</div>
         </div>
       </div>
-      <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
-      <div id="formError" class="alert alert-danger hidden"></div>
-      <button type="submit" class="btn btn-primary w-100" id="submitBtn">
-        إنشاء خطة 12 أسبوع
-      </button>
-    </form>
+
+      <form id="goalForm" class="form-card animate-in p-4 p-md-5 rounded-4 shadow-sm">
+        <div class="form-group">
+          <label>اسم الهدف</label>
+          <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
+        </div>
+        <div class="form-group">
+          <label>النتيجة المطلوبة</label>
+          <textarea name="result" rows="2" required placeholder="ماذا تريد أن تحقق بعد 12 أسبوعاً؟"></textarea>
+        </div>
+        <div class="form-group">
+          <label>سبب الهدف</label>
+          <textarea name="reason" rows="2" required placeholder="لماذا هذا الهدف مهم لك؟"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>عدد الساعات المتاحة أسبوعياً</label>
+            <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
+          </div>
+          <div class="form-group">
+            <label>أيام العمل في الأسبوع</label>
+            <select name="work_days" id="workDaysInput">
+              <option value="5" selected>5 أيام (يومان راحة)</option>
+              <option value="4">4 أيام (3 أيام راحة)</option>
+              <option value="3">3 أيام (4 أيام راحة)</option>
+              <option value="6">6 أيام (يوم راحة)</option>
+              <option value="2">2 أيام (5 أيام راحة)</option>
+            </select>
+          </div>
+        </div>
+        <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
+        <div id="formError" class="alert alert-danger hidden"></div>
+        <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+          إنشاء خطة 12 أسبوع
+        </button>
+      </form>
+    </section>
     ${quoteBanner(2, "✦ ركّز")}
   `;
 
