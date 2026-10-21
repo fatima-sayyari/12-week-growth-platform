@@ -6,6 +6,11 @@ const app = document.getElementById("app");
 const LOGO = "/assets/logo.jpeg";
 let currentGoalId = localStorage.getItem("goalId");
 let userName = localStorage.getItem("userName") || "";
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let revealObserver;
+let counterObserver;
+let homeQuoteIntervalId = null;
+let heroWebglCleanup = null;
 
 // ─── عبارات تحفيزية ───
 const MOTIVATIONAL_QUOTES = [
@@ -41,6 +46,26 @@ function updateNav() {
   document.querySelectorAll(".nav-plan, .nav-today, .nav-stats").forEach((el) => {
     el.classList.toggle("hidden", !show);
   });
+}
+
+function setActiveNavLink(hashPath) {
+  const normalized = hashPath === "/dashboard" ? "/plan" : hashPath;
+  document.querySelectorAll(".site-nav a").forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    const targetPath = href.replace("#", "") || "/";
+    link.classList.toggle("active", targetPath === normalized);
+  });
+}
+
+function cleanupActiveEffects() {
+  if (homeQuoteIntervalId) {
+    clearInterval(homeQuoteIntervalId);
+    homeQuoteIntervalId = null;
+  }
+  if (heroWebglCleanup) {
+    heroWebglCleanup();
+    heroWebglCleanup = null;
+  }
 }
 
 function progressBar(percent) {
@@ -88,9 +113,11 @@ function showWeekCelebration(weekNumber) {
 function initHomeQuoteRotation() {
   const textEl = document.getElementById("homeQuote");
   if (!textEl) return;
+  if (homeQuoteIntervalId) clearInterval(homeQuoteIntervalId);
   let i = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
   textEl.textContent = MOTIVATIONAL_QUOTES[i];
-  setInterval(() => {
+  textEl.style.opacity = "1";
+  homeQuoteIntervalId = setInterval(() => {
     i = (i + 1) % MOTIVATIONAL_QUOTES.length;
     textEl.style.opacity = "0";
     setTimeout(() => {
@@ -106,6 +133,350 @@ function cleanDisplayTitle(title) {
 
 function getDisplayName(goal) {
   return goal?.user_name || userName || "بطل";
+}
+
+function initPageEnhancements() {
+  initScrollReveal();
+  initTiltCards();
+  initMagneticButtons();
+  initCounterAnimations();
+  initHeroPointerGlow();
+}
+
+function collectInteractiveElements() {
+  const revealSelectors = [
+    ".hero-content",
+    ".hero-visual",
+    ".impact-card",
+    ".method-card",
+    ".timeline-item",
+    ".quote-banner",
+    ".create-intro",
+    ".form-card",
+    ".week-card",
+    ".task-item",
+    ".stat-card",
+    ".chart-box",
+    ".sidebar-card",
+    ".rest-day-card",
+  ];
+
+  document.querySelectorAll(revealSelectors.join(",")).forEach((el) => {
+    if (!el.hasAttribute("data-reveal")) el.setAttribute("data-reveal", "");
+  });
+
+  const tiltSelectors = [".impact-card", ".method-card", ".stat-card", ".chart-box", ".timeline-item"];
+  document.querySelectorAll(tiltSelectors.join(",")).forEach((el) => {
+    if (!el.hasAttribute("data-tilt")) el.setAttribute("data-tilt", "");
+  });
+}
+
+function initScrollReveal() {
+  collectInteractiveElements();
+  const items = document.querySelectorAll("[data-reveal]");
+  if (!items.length) return;
+
+  if (prefersReducedMotion) {
+    items.forEach((el) => el.classList.add("is-visible"));
+    return;
+  }
+
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+  }
+
+  items.forEach((el, idx) => {
+    if (el.dataset.revealInit) return;
+    el.dataset.revealInit = "1";
+    el.style.setProperty("--reveal-delay", `${Math.min(idx * 65, 450)}ms`);
+    revealObserver.observe(el);
+  });
+}
+
+function initTiltCards() {
+  if (prefersReducedMotion) return;
+
+  document.querySelectorAll("[data-tilt]").forEach((card) => {
+    if (card.dataset.tiltInit) return;
+    card.dataset.tiltInit = "1";
+
+    card.addEventListener("pointermove", (e) => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const rx = (0.5 - py) * 7;
+      const ry = (px - 0.5) * 7;
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
+
+function initMagneticButtons() {
+  if (prefersReducedMotion) return;
+
+  document.querySelectorAll(".hero-actions .btn, .hero-actions-strong .btn, #submitBtn").forEach((btn) => {
+    if (btn.dataset.magneticInit) return;
+    btn.dataset.magneticInit = "1";
+    btn.classList.add("magnetic-btn");
+
+    btn.addEventListener("pointermove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.12}px, ${y * 0.12}px)`;
+    });
+
+    btn.addEventListener("pointerleave", () => {
+      btn.style.transform = "";
+    });
+  });
+}
+
+function animateCounter(el, target) {
+  const duration = 1200;
+  const start = performance.now();
+
+  function frame(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    const value = Math.round(target * eased);
+    el.textContent = value.toLocaleString("ar");
+    if (progress < 1) requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function initCounterAnimations() {
+  const counters = document.querySelectorAll("[data-counter]");
+  if (!counters.length) return;
+
+  if (prefersReducedMotion) {
+    counters.forEach((el) => {
+      const target = Number(el.dataset.counter || 0);
+      el.textContent = Number.isFinite(target) ? target.toLocaleString("ar") : el.textContent;
+    });
+    return;
+  }
+
+  if (!counterObserver) {
+    counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          if (el.dataset.counterAnimated) return;
+          el.dataset.counterAnimated = "1";
+          animateCounter(el, Number(el.dataset.counter || 0));
+          counterObserver.unobserve(el);
+        });
+      },
+      { threshold: 0.4 }
+    );
+  }
+
+  counters.forEach((el) => {
+    if (!el.dataset.counterInit) {
+      el.dataset.counterInit = "1";
+      counterObserver.observe(el);
+    }
+  });
+}
+
+function initHeroPointerGlow() {
+  const hero = document.querySelector(".hero-immersive");
+  if (!hero || hero.dataset.glowInit) return;
+  hero.dataset.glowInit = "1";
+  if (prefersReducedMotion) return;
+
+  hero.addEventListener("pointermove", (e) => {
+    const rect = hero.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    hero.style.setProperty("--mx", `${x}%`);
+    hero.style.setProperty("--my", `${y}%`);
+    hero.classList.add("pointer-active");
+  });
+
+  hero.addEventListener("pointerleave", () => {
+    hero.classList.remove("pointer-active");
+  });
+}
+
+function initHeroWebGL() {
+  const canvas = document.getElementById("heroWebgl");
+  const hero = document.querySelector(".hero-immersive");
+  if (!canvas || !hero || prefersReducedMotion) return;
+
+  const gl = canvas.getContext("webgl", { alpha: true, antialias: true, premultipliedAlpha: true });
+  if (!gl) return;
+
+  const vertexShaderSource = `
+    attribute vec2 aPosition;
+    void main() {
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+    }
+  `;
+
+  const fragmentShaderSource = `
+    precision mediump float;
+
+    uniform vec2 uResolution;
+    uniform float uTime;
+    uniform vec2 uMouse;
+    uniform float uDark;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / uResolution.xy;
+      vec2 centered = uv - 0.5;
+      centered.x *= uResolution.x / uResolution.y;
+
+      float t = uTime * 0.45;
+      float ripple = sin(8.0 * centered.y + t + centered.x * 3.0) * 0.06;
+      float sw = noise(centered * 4.5 + vec2(t * 0.2, -t * 0.15));
+      float depth = smoothstep(0.9, -0.5, length(centered + vec2(0.0, ripple)));
+
+      vec2 m = (uMouse / uResolution) - 0.5;
+      m.x *= uResolution.x / uResolution.y;
+      float pointerGlow = 1.0 - smoothstep(0.0, 0.45, length(centered - m));
+
+      vec3 lightBase = vec3(0.97, 0.98, 1.0);
+      vec3 darkBase = vec3(0.07, 0.10, 0.16);
+      vec3 base = mix(lightBase, darkBase, uDark);
+
+      vec3 accentA = mix(vec3(0.55, 0.10, 0.10), vec3(0.83, 0.20, 0.24), sw);
+      vec3 accentB = mix(vec3(0.13, 0.14, 0.19), vec3(0.25, 0.28, 0.34), sw);
+      vec3 blended = mix(accentB, accentA, depth * 0.8 + pointerGlow * 0.2);
+      blended += pointerGlow * vec3(0.22, 0.05, 0.07);
+
+      float alpha = 0.78;
+      vec3 color = mix(base, blended, 0.48);
+      gl_FragColor = vec4(color, alpha);
+    }
+  `;
+
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error("WebGL shader error:", gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  const vertexShader = compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+  if (!vertexShader || !fragmentShader) return;
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error("WebGL program link error:", gl.getProgramInfoLog(program));
+    return;
+  }
+  gl.useProgram(program);
+
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1, -1,
+      1, -1,
+      -1, 1,
+      1, 1,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const aPosition = gl.getAttribLocation(program, "aPosition");
+  gl.enableVertexAttribArray(aPosition);
+  gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+  const uTime = gl.getUniformLocation(program, "uTime");
+  const uResolution = gl.getUniformLocation(program, "uResolution");
+  const uMouse = gl.getUniformLocation(program, "uMouse");
+  const uDark = gl.getUniformLocation(program, "uDark");
+
+  const pointer = { x: 0, y: 0 };
+  let rafId = 0;
+  let start = performance.now();
+
+  function handlePointerMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = e.clientX - rect.left;
+    pointer.y = rect.height - (e.clientY - rect.top);
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  function draw(now) {
+    const elapsed = (now - start) / 1000;
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark" ? 1 : 0;
+    gl.uniform1f(uTime, elapsed);
+    gl.uniform2f(uResolution, canvas.width, canvas.height);
+    gl.uniform2f(uMouse, pointer.x * (canvas.width / Math.max(canvas.clientWidth, 1)), pointer.y * (canvas.height / Math.max(canvas.clientHeight, 1)));
+    gl.uniform1f(uDark, isDark);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    rafId = requestAnimationFrame(draw);
+  }
+
+  pointer.x = canvas.clientWidth * 0.55;
+  pointer.y = canvas.clientHeight * 0.45;
+  hero.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+  rafId = requestAnimationFrame(draw);
+
+  heroWebglCleanup = () => {
+    cancelAnimationFrame(rafId);
+    hero.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("resize", resizeCanvas);
+    gl.deleteBuffer(positionBuffer);
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+    gl.deleteProgram(program);
+  };
 }
 
 // ─── الوضع الداكن ───
@@ -134,41 +505,66 @@ function initTheme() {
 // ─── 1. الصفحة الرئيسية ───
 function renderHome() {
   app.innerHTML = `
-    <section class="hero animate-in">
-      <div>
-        <div class="hero-badge"><span class="dot"></span> The 12 Week Year</div>
-        <h1>حوّل <span>12 أسبوعاً</span> إلى سنة كاملة من الإنجاز</h1>
+    <section class="hero hero-immersive animate-in">
+      <div class="hero-aurora"></div>
+      <canvas id="heroWebgl" class="hero-webgl-canvas" aria-hidden="true"></canvas>
+      <div class="hero-content">
+        <div class="hero-badge pulse-ring"><span class="dot"></span> منصة 12-Week Growth Platform</div>
+        <h1>خطة تنقلك من <span>التفكير</span> إلى <span>الإنجاز الحقيقي</span> خلال 12 أسبوعاً</h1>
         <p>
-          بدلاً من الأهداف السنوية البعيدة، ساعدك هذه المنصة على تحويل هدفك الكبير
-          إلى خطة عملية واضحة لمدة 12 أسبوعاً — مهمة تلو الأخرى.
+          تجربة تخطيط ذكية ومكثفة تحوّل هدفك الكبير إلى خطوات أسبوعية قابلة للتنفيذ،
+          مع متابعة يومية تشدّك للاستمرار.
         </p>
-        <div class="form-group" style="max-width:320px;margin-bottom:1.25rem">
-          <label for="userNameInput">اسمك (للتحية الشخصية)</label>
-          <input type="text" id="userNameInput" placeholder="مثال: فاطمة" value="${userName}" />
+        <div class="form-group hero-name-input">
+          <label for="userNameInput">اسمك (لإضفاء طابع شخصي)</label>
+          <input type="text" id="userNameInput" placeholder="مثال: فاطمة" value="${userName}" class="shadow-sm" />
         </div>
-        <div class="hero-actions">
+        <div class="hero-actions hero-actions-strong">
           <a href="#/create" class="btn btn-primary">ابدأ التخطيط</a>
-          <a href="#about" class="btn btn-outline">كيف يعمل؟</a>
+          <a href="#about" class="btn btn-outline">استكشف التجربة</a>
+        </div>
+        <div class="hero-mini-metrics">
+          <div><strong data-counter="12">0</strong><span>أسبوع تركيز</span></div>
+          <div><strong data-counter="84">0</strong><span>يوم تنفيذ</span></div>
+          <div><strong>∞</strong><span>إمكانية التطوير</span></div>
         </div>
       </div>
-      <div class="hero-visual">
-        <img src="${LOGO}" alt="12 Week of Year" />
+      <div class="hero-visual hero-visual-card rounded-4 shadow-sm">
+        <div class="logo-glow-wrap">
+          <img src="${LOGO}" alt="12 Week of Year" />
+        </div>
+        <p class="hero-visual-caption">"لا تنتظر السنة القادمة... اصنع نقلة هذا الأسبوع."</p>
       </div>
     </section>
 
-    ${quoteBanner(0, "✦ عبارة اليوم")}
+    <section class="impact-strip animate-in">
+      <article class="impact-card">
+        <h3>🎯 هدف واضح</h3>
+        <p>عرّفي ما تريدين الوصول إليه بلغة نتيجة قابلة للقياس.</p>
+      </article>
+      <article class="impact-card">
+        <h3>🧠 خطة ذكية</h3>
+        <p>الذكاء الاصطناعي يبني لك خارطة 12 أسبوعاً بمهام عملية.</p>
+      </article>
+      <article class="impact-card">
+        <h3>⚡ تنفيذ يومي</h3>
+        <p>تابعي يومك، أنجزي، أجّلي عند الحاجة، وراقبي نسبة التقدم.</p>
+      </article>
+    </section>
+
+    ${quoteBanner(0, "✦ شرارة اليوم")}
 
     <section id="about">
       <h2 class="section-title">الفكرة ببساطة</h2>
       <p class="section-desc">
-        مستوحى من كتاب The 12 Week Year — نضغّط سنة كاملة من التخطيط في 12 أسبوعاً
-        مع أهداف أسبوعية ومهام يومية قابلة للقياس.
+        مستوحى من كتاب The 12 Week Year — نضعك داخل دورة تركيز قصيرة لكنها عالية التأثير،
+        حيث كل أسبوع له دور واضح في تحقيق النتيجة النهائية.
       </p>
-      <div class="method-grid">
+      <div class="method-grid method-grid-premium">
         ${[
-          { n: "01", t: "حدّد هدفك", d: "اسم الهدف، النتيجة المطلوبة، السبب، والوقت المتاح." },
-          { n: "02", t: "خطة ذكية", d: "الذكاء الاصطناعي يقسّم هدفك إلى 12 أسبوعاً بمهام واضحة." },
-          { n: "03", t: "نفّذ يومياً", d: "تابع مهامك، سجّل تقدمك، وراقب إنجازك أسبوعاً بعد أسبوع." },
+          { n: "01", t: "حدّد هدفك", d: "اكتب الهدف والنتيجة والسبب وساعاتك المتاحة." },
+          { n: "02", t: "احصل على خارطة 12 أسبوع", d: "خطة أسبوعية مركزة مع مهام مرتبة ومنطقية." },
+          { n: "03", t: "حوّل الانضباط إلى عادة", d: "لوحة يومية + نسب تقدم + إحصائيات تحفزك للاستمرار." },
         ]
           .map(
             (s) => `
@@ -180,6 +576,13 @@ function renderHome() {
           )
           .join("")}
       </div>
+
+      <div class="timeline-lite">
+        <div class="timeline-item"><span>الأسبوع 1-4</span><p>تأسيس العادات وبناء الزخم</p></div>
+        <div class="timeline-item"><span>الأسبوع 5-8</span><p>تسريع الأداء والتطبيق العملي</p></div>
+        <div class="timeline-item"><span>الأسبوع 9-12</span><p>الإنهاء، الإطلاق، وحصد النتيجة</p></div>
+      </div>
+
       <div class="text-center">
         <a href="#/create" class="btn btn-primary">ابدأ التخطيط الآن</a>
       </div>
@@ -198,51 +601,70 @@ function renderHome() {
   });
 
   initHomeQuoteRotation();
+  initHeroWebGL();
+  initPageEnhancements();
 }
 
 // ─── 2. صفحة إنشاء الهدف ───
 function renderCreate() {
   app.innerHTML = `
-    ${quoteBanner(10, "✦ قبل أن تبدأ")}
-    <div class="page-header text-center">
-      <h1>إنشاء هدف جديد</h1>
-      <p>أدخل تفاصيل هدفك وسنُنشئ خطة 12 أسبوعاً بالذكاء الاصطناعي</p>
-    </div>
-    <form id="goalForm" class="form-card animate-in">
-      <div class="form-group">
-        <label>اسم الهدف</label>
-        <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
-      </div>
-      <div class="form-group">
-        <label>النتيجة المطلوبة</label>
-        <textarea name="result" rows="2" required placeholder="ماذا تريد أن تحقق بعد 12 أسبوعاً؟"></textarea>
-      </div>
-      <div class="form-group">
-        <label>سبب الهدف</label>
-        <textarea name="reason" rows="2" required placeholder="لماذا هذا الهدف مهم لك؟"></textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>عدد الساعات المتاحة أسبوعياً</label>
-          <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
-        </div>
-        <div class="form-group">
-          <label>أيام العمل في الأسبوع</label>
-          <select name="work_days" id="workDaysInput">
-            <option value="5" selected>5 أيام (يومان راحة)</option>
-            <option value="4">4 أيام (3 أيام راحة)</option>
-            <option value="3">3 أيام (4 أيام راحة)</option>
-            <option value="6">6 أيام (يوم راحة)</option>
-            <option value="2">2 أيام (5 أيام راحة)</option>
-          </select>
+    ${quoteBanner(10, "✦ قبل الانطلاق")}
+    <section class="create-layout animate-in">
+      <div class="create-intro">
+        <h1>صمّمي هدفك التالي بثقة</h1>
+        <p>
+          هذه الخطوة هي أهم قرار: كلما كان الهدف واضحًا، كانت الخطة أذكى والتنفيذ أسرع.
+          اكتبي التفاصيل وسنحوّلها مباشرةً إلى خارطة 12 أسبوع.
+        </p>
+        <div class="create-tips">
+          <div>✅ اكتبي النتيجة كأنها حدثت بالفعل</div>
+          <div>✅ اجعلي السبب شخصيًا ومحفزًا</div>
+          <div>✅ كوني واقعية في عدد الساعات</div>
         </div>
       </div>
-      <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
-      <div id="formError" class="alert hidden"></div>
-      <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%">
-        إنشاء خطة 12 أسبوع
-      </button>
-    </form>
+
+      <form id="goalForm" class="form-card animate-in p-4 p-md-5 rounded-4 shadow-sm">
+        <div class="form-group">
+          <label>اسم الهدف</label>
+          <input type="text" name="name" required placeholder="مثال: تعلّم تطوير الويب" />
+        </div>
+        <div class="form-group">
+          <label>النتيجة المطلوبة</label>
+          <textarea name="result" rows="2" required placeholder="ماذا تريد أن تحقق بعد 12 أسبوعاً؟"></textarea>
+        </div>
+        <div class="form-group">
+          <label>سبب الهدف</label>
+          <textarea name="reason" rows="2" required placeholder="لماذا هذا الهدف مهم لك؟"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>عدد الساعات المتاحة أسبوعياً</label>
+            <input type="number" name="hours" id="hoursInput" required min="1" max="168" step="0.5" value="20" />
+          </div>
+          <div class="form-group">
+            <label>أيام العمل في الأسبوع</label>
+            <select name="work_days" id="workDaysInput">
+              <option value="5" selected>5 أيام (يومان راحة)</option>
+              <option value="4">4 أيام (3 أيام راحة)</option>
+              <option value="3">3 أيام (4 أيام راحة)</option>
+              <option value="6">6 أيام (يوم راحة)</option>
+              <option value="2">2 أيام (5 أيام راحة)</option>
+            </select>
+          </div>
+        </div>
+        <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
+        <div class="form-completion">
+          <div class="form-completion-track">
+            <div id="formCompletionBar" class="form-completion-fill" style="width:0%"></div>
+          </div>
+          <p id="formCompletionText" class="form-completion-text">جاهزية الخطة: 0%</p>
+        </div>
+        <div id="formError" class="alert alert-danger hidden"></div>
+        <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+          إنشاء خطة 12 أسبوع
+        </button>
+      </form>
+    </section>
     ${quoteBanner(2, "✦ ركّز")}
   `;
 
@@ -263,7 +685,24 @@ function renderCreate() {
   document.getElementById("workDaysInput").addEventListener("change", updateHoursPreview);
   updateHoursPreview();
 
-  document.getElementById("goalForm").addEventListener("submit", async (e) => {
+  const goalForm = document.getElementById("goalForm");
+  const completionBar = document.getElementById("formCompletionBar");
+  const completionText = document.getElementById("formCompletionText");
+  const tracked = ["name", "result", "reason", "hours"];
+  function updateFormCompletion() {
+    const fd = new FormData(goalForm);
+    const done = tracked.filter((k) => String(fd.get(k) || "").trim().length > 0).length;
+    const pct = Math.round((done / tracked.length) * 100);
+    completionBar.style.width = `${pct}%`;
+    completionText.textContent = `جاهزية الخطة: ${pct}%`;
+  }
+  goalForm.querySelectorAll("input, textarea, select").forEach((el) => {
+    el.addEventListener("input", updateFormCompletion);
+    el.addEventListener("change", updateFormCompletion);
+  });
+  updateFormCompletion();
+
+  goalForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = document.getElementById("submitBtn");
     const errEl = document.getElementById("formError");
@@ -297,6 +736,8 @@ function renderCreate() {
       btn.textContent = "إنشاء خطة 12 أسبوع";
     }
   });
+
+  initPageEnhancements();
 }
 
 // ─── 3. صفحة خطة 12 أسبوع ───
@@ -377,7 +818,7 @@ async function renderPlan() {
             const pct = w.total_tasks > 0 ? Math.round((w.completed_tasks / w.total_tasks) * 100) : 0;
             const isDone = w.completed || pct === 100;
             return `
-            <div class="week-card ${isDone ? "done" : ""} animate-in" style="animation-delay:${idx * 0.05}s"
+            <div class="week-card ${isDone ? "done" : ""} animate-in shadow-sm" style="animation-delay:${idx * 0.05}s"
               data-week-id="${w.id}" data-week-num="${w.week_number}">
               <div class="week-header">
                 <div>
@@ -431,6 +872,7 @@ async function renderPlan() {
         renderPlan();
       });
     });
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -518,7 +960,7 @@ async function renderToday() {
           ${tasksHtml}
         </div>
 
-        <aside class="sidebar-card animate-in">
+        <aside class="sidebar-card animate-in shadow-sm">
           <h3>ملخص اليوم</h3>
           <p style="font-size:0.85rem;color:var(--muted)">الأيام المتبقية</p>
           <div class="stat-big">${daysRemaining}</div>
@@ -547,6 +989,7 @@ async function renderToday() {
     document.querySelectorAll(".notes-input").forEach((ta) => {
       ta.addEventListener("blur", () => saveNotes(ta.dataset.id, ta.value));
     });
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -582,25 +1025,25 @@ async function renderStats() {
       ${quoteBanner(quoteIdx, "✦ استمر")}
 
       <div class="stats-grid">
-        <div class="stat-card animate-in">
-          <div class="value red">${stats.progressPercent}%</div>
+        <div class="stat-card animate-in shadow-sm">
+          <div class="value red"><span data-counter="${stats.progressPercent}">0</span>%</div>
           <div class="label">نسبة الإنجاز الكلية</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.05s">
-          <div class="value">${stats.completedTasks}</div>
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.05s">
+          <div class="value"><span data-counter="${stats.completedTasks}">0</span></div>
           <div class="label">مهام مكتملة</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.1s">
-          <div class="value">${stats.remainingTasks}</div>
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.1s">
+          <div class="value"><span data-counter="${stats.remainingTasks}">0</span></div>
           <div class="label">مهام متبقية</div>
         </div>
-        <div class="stat-card animate-in" style="animation-delay:0.15s">
-          <div class="value">${stats.deferredTasks}</div>
+        <div class="stat-card animate-in shadow-sm" style="animation-delay:0.15s">
+          <div class="value"><span data-counter="${stats.deferredTasks}">0</span></div>
           <div class="label">مهام مؤجّلة</div>
         </div>
       </div>
 
-      <div class="chart-box animate-in">
+      <div class="chart-box animate-in rounded-4 shadow-sm">
         <h3>التقدم الأسبوعي</h3>
         ${stats.weeklyStats
           .map((w) => {
@@ -615,7 +1058,7 @@ async function renderStats() {
           .join("")}
       </div>
 
-      <div class="chart-box animate-in">
+      <div class="chart-box animate-in rounded-4 shadow-sm">
         <h3>نظرة عامة</h3>
         <canvas id="overviewChart" height="200"></canvas>
       </div>
@@ -624,6 +1067,7 @@ async function renderStats() {
     `;
 
     drawOverviewChart(stats);
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -697,9 +1141,11 @@ const routes = {
 };
 
 function router() {
+  cleanupActiveEffects();
   const hash = location.hash.slice(1) || "/";
   (routes[hash] || renderHome)();
   updateNav();
+  setActiveNavLink(hash);
   document.getElementById("siteNav")?.classList.remove("open");
 }
 
