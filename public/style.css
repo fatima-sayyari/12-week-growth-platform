@@ -19,13 +19,13 @@
 }
 
 [data-theme="dark"] {
-  --red: #e05555;
-  --black: #f3f4f6;
-  --white: #111827;
-  --muted: #9ca3af;
-  --border: #374151;
-  --bg-soft: #1f2937;
-  --red-soft: #2d1515;
+  --red: #ef4444;
+  --black: #f8fafc;
+  --white: #0f172a;
+  --muted: #cbd5e1;
+  --border: #334155;
+  --bg-soft: #1e293b;
+  --red-soft: #3b1015;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   --shadow-hover: 0 8px 32px rgba(224, 85, 85, 0.15);
 }
@@ -82,17 +82,18 @@ body {
 }
 
 .header-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   padding: 0.75rem 0;
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  justify-self: end;
 }
 
 .logo-link { display: flex; align-items: center; text-decoration: none; }
@@ -102,16 +103,22 @@ body {
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: center;
+  gap: 0.45rem;
   flex-wrap: wrap;
+  justify-self: center;
+  width: 100%;
 }
 
 .site-nav a {
   color: var(--black);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.95rem;
-  transition: color var(--transition);
+  font-size: 0.86rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.34rem 0.72rem;
+  transition: color var(--transition), background var(--transition), border-color var(--transition), transform var(--transition);
   position: relative;
 }
 .site-nav a::after {
@@ -126,6 +133,12 @@ body {
 }
 .site-nav a:hover { color: var(--red); }
 .site-nav a:hover::after { width: 100%; }
+.site-nav a.active {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+  color: var(--red);
+}
+.site-nav a::after { display: none; }
 
 .theme-toggle,
 .nav-toggle {
@@ -823,14 +836,30 @@ body {
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   .nav-toggle { display: block; }
+  .header-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "logo actions"
+      "nav nav";
+    gap: 0.65rem;
+  }
+  .logo-link { grid-area: logo; }
+  .header-actions { grid-area: actions; justify-self: end; }
   .site-nav {
     display: none;
     flex-direction: column;
     width: 100%;
+    grid-area: nav;
     padding-bottom: 0.75rem;
+    align-items: stretch;
+    gap: 0.35rem;
   }
   .site-nav.open { display: flex; }
-  .header-inner { flex-wrap: wrap; }
+  .site-nav a {
+    width: 100%;
+    text-align: center;
+    padding: 0.48rem 0.75rem;
+  }
 
   .hero { grid-template-columns: 1fr; gap: 1.5rem; }
   .method-grid { grid-template-columns: 1fr; }
@@ -920,8 +949,21 @@ body {
   box-shadow: 0 15px 40px rgba(10, 10, 10, 0.08);
 }
 
+.hero-webgl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
 [data-theme="dark"] .hero-immersive {
   background: linear-gradient(130deg, rgba(17, 24, 39, 0.95), rgba(45, 21, 21, 0.92));
+}
+[data-theme="dark"] .hero-webgl-canvas {
+  opacity: 0.72;
 }
 
 .hero-aurora {
@@ -1313,6 +1355,48 @@ body {
 
 .hero-visual-card {
   border-radius: 20px;
+}
+
+.quote-banner-dark {
+  border-right-width: 5px;
+  background: linear-gradient(135deg, #121923, #1a2332);
+}
+
+.quote-banner-dark p {
+  color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .quote-banner-dark {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+
+[data-theme="dark"] .quote-banner p {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .impact-card,
+[data-theme="dark"] .method-card,
+[data-theme="dark"] .timeline-item,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .chart-box,
+[data-theme="dark"] .form-card,
+[data-theme="dark"] .create-intro,
+[data-theme="dark"] .task-item,
+[data-theme="dark"] .week-card,
+[data-theme="dark"] .sidebar-card {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .site-nav a {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .site-nav a.active {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 @media (max-width: 992px) {

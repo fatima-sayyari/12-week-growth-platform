@@ -9,6 +9,8 @@ let userName = localStorage.getItem("userName") || "";
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 let revealObserver;
 let counterObserver;
+let homeQuoteIntervalId = null;
+let heroWebglCleanup = null;
 
 // ─── عبارات تحفيزية ───
 const MOTIVATIONAL_QUOTES = [
@@ -44,6 +46,26 @@ function updateNav() {
   document.querySelectorAll(".nav-plan, .nav-today, .nav-stats").forEach((el) => {
     el.classList.toggle("hidden", !show);
   });
+}
+
+function setActiveNavLink(hashPath) {
+  const normalized = hashPath === "/dashboard" ? "/plan" : hashPath;
+  document.querySelectorAll(".site-nav a").forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    const targetPath = href.replace("#", "") || "/";
+    link.classList.toggle("active", targetPath === normalized);
+  });
+}
+
+function cleanupActiveEffects() {
+  if (homeQuoteIntervalId) {
+    clearInterval(homeQuoteIntervalId);
+    homeQuoteIntervalId = null;
+  }
+  if (heroWebglCleanup) {
+    heroWebglCleanup();
+    heroWebglCleanup = null;
+  }
 }
 
 function progressBar(percent) {
@@ -91,9 +113,11 @@ function showWeekCelebration(weekNumber) {
 function initHomeQuoteRotation() {
   const textEl = document.getElementById("homeQuote");
   if (!textEl) return;
+  if (homeQuoteIntervalId) clearInterval(homeQuoteIntervalId);
   let i = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
   textEl.textContent = MOTIVATIONAL_QUOTES[i];
-  setInterval(() => {
+  textEl.style.opacity = "1";
+  homeQuoteIntervalId = setInterval(() => {
     i = (i + 1) % MOTIVATIONAL_QUOTES.length;
     textEl.style.opacity = "0";
     setTimeout(() => {
@@ -293,6 +317,168 @@ function initHeroPointerGlow() {
   });
 }
 
+function initHeroWebGL() {
+  const canvas = document.getElementById("heroWebgl");
+  const hero = document.querySelector(".hero-immersive");
+  if (!canvas || !hero || prefersReducedMotion) return;
+
+  const gl = canvas.getContext("webgl", { alpha: true, antialias: true, premultipliedAlpha: true });
+  if (!gl) return;
+
+  const vertexShaderSource = `
+    attribute vec2 aPosition;
+    void main() {
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+    }
+  `;
+
+  const fragmentShaderSource = `
+    precision mediump float;
+
+    uniform vec2 uResolution;
+    uniform float uTime;
+    uniform vec2 uMouse;
+    uniform float uDark;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / uResolution.xy;
+      vec2 centered = uv - 0.5;
+      centered.x *= uResolution.x / uResolution.y;
+
+      float t = uTime * 0.45;
+      float ripple = sin(8.0 * centered.y + t + centered.x * 3.0) * 0.06;
+      float sw = noise(centered * 4.5 + vec2(t * 0.2, -t * 0.15));
+      float depth = smoothstep(0.9, -0.5, length(centered + vec2(0.0, ripple)));
+
+      vec2 m = (uMouse / uResolution) - 0.5;
+      m.x *= uResolution.x / uResolution.y;
+      float pointerGlow = 1.0 - smoothstep(0.0, 0.45, length(centered - m));
+
+      vec3 lightBase = vec3(0.97, 0.98, 1.0);
+      vec3 darkBase = vec3(0.07, 0.10, 0.16);
+      vec3 base = mix(lightBase, darkBase, uDark);
+
+      vec3 accentA = mix(vec3(0.55, 0.10, 0.10), vec3(0.83, 0.20, 0.24), sw);
+      vec3 accentB = mix(vec3(0.13, 0.14, 0.19), vec3(0.25, 0.28, 0.34), sw);
+      vec3 blended = mix(accentB, accentA, depth * 0.8 + pointerGlow * 0.2);
+      blended += pointerGlow * vec3(0.22, 0.05, 0.07);
+
+      float alpha = 0.78;
+      vec3 color = mix(base, blended, 0.48);
+      gl_FragColor = vec4(color, alpha);
+    }
+  `;
+
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error("WebGL shader error:", gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  const vertexShader = compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+  if (!vertexShader || !fragmentShader) return;
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error("WebGL program link error:", gl.getProgramInfoLog(program));
+    return;
+  }
+  gl.useProgram(program);
+
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1, -1,
+      1, -1,
+      -1, 1,
+      1, 1,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const aPosition = gl.getAttribLocation(program, "aPosition");
+  gl.enableVertexAttribArray(aPosition);
+  gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+  const uTime = gl.getUniformLocation(program, "uTime");
+  const uResolution = gl.getUniformLocation(program, "uResolution");
+  const uMouse = gl.getUniformLocation(program, "uMouse");
+  const uDark = gl.getUniformLocation(program, "uDark");
+
+  const pointer = { x: 0, y: 0 };
+  let rafId = 0;
+  let start = performance.now();
+
+  function handlePointerMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = e.clientX - rect.left;
+    pointer.y = rect.height - (e.clientY - rect.top);
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  function draw(now) {
+    const elapsed = (now - start) / 1000;
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark" ? 1 : 0;
+    gl.uniform1f(uTime, elapsed);
+    gl.uniform2f(uResolution, canvas.width, canvas.height);
+    gl.uniform2f(uMouse, pointer.x * (canvas.width / Math.max(canvas.clientWidth, 1)), pointer.y * (canvas.height / Math.max(canvas.clientHeight, 1)));
+    gl.uniform1f(uDark, isDark);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    rafId = requestAnimationFrame(draw);
+  }
+
+  pointer.x = canvas.clientWidth * 0.55;
+  pointer.y = canvas.clientHeight * 0.45;
+  hero.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+  rafId = requestAnimationFrame(draw);
+
+  heroWebglCleanup = () => {
+    cancelAnimationFrame(rafId);
+    hero.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("resize", resizeCanvas);
+    gl.deleteBuffer(positionBuffer);
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+    gl.deleteProgram(program);
+  };
+}
+
 // ─── الوضع الداكن ───
 function initTheme() {
   const toggle = document.getElementById("themeToggle");
@@ -321,6 +507,7 @@ function renderHome() {
   app.innerHTML = `
     <section class="hero hero-immersive animate-in">
       <div class="hero-aurora"></div>
+      <canvas id="heroWebgl" class="hero-webgl-canvas" aria-hidden="true"></canvas>
       <div class="hero-content">
         <div class="hero-badge pulse-ring"><span class="dot"></span> منصة 12-Week Growth Platform</div>
         <h1>خطة تنقلك من <span>التفكير</span> إلى <span>الإنجاز الحقيقي</span> خلال 12 أسبوعاً</h1>
@@ -414,6 +601,7 @@ function renderHome() {
   });
 
   initHomeQuoteRotation();
+  initHeroWebGL();
   initPageEnhancements();
 }
 
@@ -953,9 +1141,11 @@ const routes = {
 };
 
 function router() {
+  cleanupActiveEffects();
   const hash = location.hash.slice(1) || "/";
   (routes[hash] || renderHome)();
   updateNav();
+  setActiveNavLink(hash);
   document.getElementById("siteNav")?.classList.remove("open");
 }
 
