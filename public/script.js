@@ -6,6 +6,9 @@ const app = document.getElementById("app");
 const LOGO = "/assets/logo.jpeg";
 let currentGoalId = localStorage.getItem("goalId");
 let userName = localStorage.getItem("userName") || "";
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let revealObserver;
+let counterObserver;
 
 // ─── عبارات تحفيزية ───
 const MOTIVATIONAL_QUOTES = [
@@ -108,6 +111,188 @@ function getDisplayName(goal) {
   return goal?.user_name || userName || "بطل";
 }
 
+function initPageEnhancements() {
+  initScrollReveal();
+  initTiltCards();
+  initMagneticButtons();
+  initCounterAnimations();
+  initHeroPointerGlow();
+}
+
+function collectInteractiveElements() {
+  const revealSelectors = [
+    ".hero-content",
+    ".hero-visual",
+    ".impact-card",
+    ".method-card",
+    ".timeline-item",
+    ".quote-banner",
+    ".create-intro",
+    ".form-card",
+    ".week-card",
+    ".task-item",
+    ".stat-card",
+    ".chart-box",
+    ".sidebar-card",
+    ".rest-day-card",
+  ];
+
+  document.querySelectorAll(revealSelectors.join(",")).forEach((el) => {
+    if (!el.hasAttribute("data-reveal")) el.setAttribute("data-reveal", "");
+  });
+
+  const tiltSelectors = [".impact-card", ".method-card", ".stat-card", ".chart-box", ".timeline-item"];
+  document.querySelectorAll(tiltSelectors.join(",")).forEach((el) => {
+    if (!el.hasAttribute("data-tilt")) el.setAttribute("data-tilt", "");
+  });
+}
+
+function initScrollReveal() {
+  collectInteractiveElements();
+  const items = document.querySelectorAll("[data-reveal]");
+  if (!items.length) return;
+
+  if (prefersReducedMotion) {
+    items.forEach((el) => el.classList.add("is-visible"));
+    return;
+  }
+
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+  }
+
+  items.forEach((el, idx) => {
+    if (el.dataset.revealInit) return;
+    el.dataset.revealInit = "1";
+    el.style.setProperty("--reveal-delay", `${Math.min(idx * 65, 450)}ms`);
+    revealObserver.observe(el);
+  });
+}
+
+function initTiltCards() {
+  if (prefersReducedMotion) return;
+
+  document.querySelectorAll("[data-tilt]").forEach((card) => {
+    if (card.dataset.tiltInit) return;
+    card.dataset.tiltInit = "1";
+
+    card.addEventListener("pointermove", (e) => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const rx = (0.5 - py) * 7;
+      const ry = (px - 0.5) * 7;
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
+
+function initMagneticButtons() {
+  if (prefersReducedMotion) return;
+
+  document.querySelectorAll(".hero-actions .btn, .hero-actions-strong .btn, #submitBtn").forEach((btn) => {
+    if (btn.dataset.magneticInit) return;
+    btn.dataset.magneticInit = "1";
+    btn.classList.add("magnetic-btn");
+
+    btn.addEventListener("pointermove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.12}px, ${y * 0.12}px)`;
+    });
+
+    btn.addEventListener("pointerleave", () => {
+      btn.style.transform = "";
+    });
+  });
+}
+
+function animateCounter(el, target) {
+  const duration = 1200;
+  const start = performance.now();
+
+  function frame(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    const value = Math.round(target * eased);
+    el.textContent = value.toLocaleString("ar");
+    if (progress < 1) requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function initCounterAnimations() {
+  const counters = document.querySelectorAll("[data-counter]");
+  if (!counters.length) return;
+
+  if (prefersReducedMotion) {
+    counters.forEach((el) => {
+      const target = Number(el.dataset.counter || 0);
+      el.textContent = Number.isFinite(target) ? target.toLocaleString("ar") : el.textContent;
+    });
+    return;
+  }
+
+  if (!counterObserver) {
+    counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          if (el.dataset.counterAnimated) return;
+          el.dataset.counterAnimated = "1";
+          animateCounter(el, Number(el.dataset.counter || 0));
+          counterObserver.unobserve(el);
+        });
+      },
+      { threshold: 0.4 }
+    );
+  }
+
+  counters.forEach((el) => {
+    if (!el.dataset.counterInit) {
+      el.dataset.counterInit = "1";
+      counterObserver.observe(el);
+    }
+  });
+}
+
+function initHeroPointerGlow() {
+  const hero = document.querySelector(".hero-immersive");
+  if (!hero || hero.dataset.glowInit) return;
+  hero.dataset.glowInit = "1";
+  if (prefersReducedMotion) return;
+
+  hero.addEventListener("pointermove", (e) => {
+    const rect = hero.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    hero.style.setProperty("--mx", `${x}%`);
+    hero.style.setProperty("--my", `${y}%`);
+    hero.classList.add("pointer-active");
+  });
+
+  hero.addEventListener("pointerleave", () => {
+    hero.classList.remove("pointer-active");
+  });
+}
+
 // ─── الوضع الداكن ───
 function initTheme() {
   const toggle = document.getElementById("themeToggle");
@@ -152,8 +337,8 @@ function renderHome() {
           <a href="#about" class="btn btn-outline">استكشف التجربة</a>
         </div>
         <div class="hero-mini-metrics">
-          <div><strong>12</strong><span>أسبوع تركيز</span></div>
-          <div><strong>84</strong><span>يوم تنفيذ</span></div>
+          <div><strong data-counter="12">0</strong><span>أسبوع تركيز</span></div>
+          <div><strong data-counter="84">0</strong><span>يوم تنفيذ</span></div>
           <div><strong>∞</strong><span>إمكانية التطوير</span></div>
         </div>
       </div>
@@ -229,6 +414,7 @@ function renderHome() {
   });
 
   initHomeQuoteRotation();
+  initPageEnhancements();
 }
 
 // ─── 2. صفحة إنشاء الهدف ───
@@ -279,6 +465,12 @@ function renderCreate() {
           </div>
         </div>
         <p class="form-hint" id="hoursPreview">20 ساعة = 5 أيام عمل × 4 س/يوم + 2 أيام راحة</p>
+        <div class="form-completion">
+          <div class="form-completion-track">
+            <div id="formCompletionBar" class="form-completion-fill" style="width:0%"></div>
+          </div>
+          <p id="formCompletionText" class="form-completion-text">جاهزية الخطة: 0%</p>
+        </div>
         <div id="formError" class="alert alert-danger hidden"></div>
         <button type="submit" class="btn btn-primary w-100" id="submitBtn">
           إنشاء خطة 12 أسبوع
@@ -305,7 +497,24 @@ function renderCreate() {
   document.getElementById("workDaysInput").addEventListener("change", updateHoursPreview);
   updateHoursPreview();
 
-  document.getElementById("goalForm").addEventListener("submit", async (e) => {
+  const goalForm = document.getElementById("goalForm");
+  const completionBar = document.getElementById("formCompletionBar");
+  const completionText = document.getElementById("formCompletionText");
+  const tracked = ["name", "result", "reason", "hours"];
+  function updateFormCompletion() {
+    const fd = new FormData(goalForm);
+    const done = tracked.filter((k) => String(fd.get(k) || "").trim().length > 0).length;
+    const pct = Math.round((done / tracked.length) * 100);
+    completionBar.style.width = `${pct}%`;
+    completionText.textContent = `جاهزية الخطة: ${pct}%`;
+  }
+  goalForm.querySelectorAll("input, textarea, select").forEach((el) => {
+    el.addEventListener("input", updateFormCompletion);
+    el.addEventListener("change", updateFormCompletion);
+  });
+  updateFormCompletion();
+
+  goalForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = document.getElementById("submitBtn");
     const errEl = document.getElementById("formError");
@@ -339,6 +548,8 @@ function renderCreate() {
       btn.textContent = "إنشاء خطة 12 أسبوع";
     }
   });
+
+  initPageEnhancements();
 }
 
 // ─── 3. صفحة خطة 12 أسبوع ───
@@ -473,6 +684,7 @@ async function renderPlan() {
         renderPlan();
       });
     });
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -589,6 +801,7 @@ async function renderToday() {
     document.querySelectorAll(".notes-input").forEach((ta) => {
       ta.addEventListener("blur", () => saveNotes(ta.dataset.id, ta.value));
     });
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -625,19 +838,19 @@ async function renderStats() {
 
       <div class="stats-grid">
         <div class="stat-card animate-in shadow-sm">
-          <div class="value red">${stats.progressPercent}%</div>
+          <div class="value red"><span data-counter="${stats.progressPercent}">0</span>%</div>
           <div class="label">نسبة الإنجاز الكلية</div>
         </div>
         <div class="stat-card animate-in shadow-sm" style="animation-delay:0.05s">
-          <div class="value">${stats.completedTasks}</div>
+          <div class="value"><span data-counter="${stats.completedTasks}">0</span></div>
           <div class="label">مهام مكتملة</div>
         </div>
         <div class="stat-card animate-in shadow-sm" style="animation-delay:0.1s">
-          <div class="value">${stats.remainingTasks}</div>
+          <div class="value"><span data-counter="${stats.remainingTasks}">0</span></div>
           <div class="label">مهام متبقية</div>
         </div>
         <div class="stat-card animate-in shadow-sm" style="animation-delay:0.15s">
-          <div class="value">${stats.deferredTasks}</div>
+          <div class="value"><span data-counter="${stats.deferredTasks}">0</span></div>
           <div class="label">مهام مؤجّلة</div>
         </div>
       </div>
@@ -666,6 +879,7 @@ async function renderStats() {
     `;
 
     drawOverviewChart(stats);
+    initPageEnhancements();
   } catch (err) {
     app.innerHTML = `<div class="alert">${err.message}</div>`;
   }
